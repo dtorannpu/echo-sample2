@@ -1,7 +1,7 @@
 package main
 
 import (
-	"net/http"
+	"echo-sample2/internal/domains/todo"
 	"os"
 
 	"github.com/labstack/echo/v4"
@@ -27,9 +27,8 @@ func main() {
 		},
 	}))
 
-	e.GET("/", func(c echo.Context) error {
-		return c.String(http.StatusOK, "Hello, World!")
-	})
+	todoHandler := todo.NewTodoHandler()
+	todoHandler.RegisterTodoRoutes(e)
 
 	e.Logger.Fatal(e.Start(":1323"))
 }

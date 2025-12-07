@@ -1,0 +1,53 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  GREETING: Hello, World!
+
+tasks:
+  default:
+    cmds:
+      - echo "{{.GREETING}}"
+    silent: true
+
+  build:
+    cmds:
+      - task: build:unix
+      - task: build:windows
+
+  build:unix:
+    internal: true
+    platforms: [ linux, darwin ]
+    cmds:
+      - go build -o ./bin/server ./cmd/server/main.go
+
+  build:windows:
+    internal: true
+    platforms: [ windows ]
+    cmds:
+      - go build -o ./bin/server.exe ./cmd/server/main.go
+
+  clean:
+    - rm -rf bin
+    - go clean
+
+  run:
+    deps:
+      - build
+    cmds:
+      - task: run:unix
+      - task: run:windows
+
+  run:unix:
+    internal: true
+    platforms: [ linux, darwin ]
+    cmds:
+      - ./bin/server
+
+  run:windows:
+    internal: true
+    platforms: [ windows ]
+    cmds:
+      - ./bin/server.exe
+

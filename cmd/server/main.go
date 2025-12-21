@@ -4,7 +4,11 @@ import (
 	"context"
 	"echo-sample2/internal/domains/todo"
 	"echo-sample2/internal/tracing"
+	"errors"
+	"net/http"
 	"os"
+	"os/signal"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -49,5 +53,18 @@ func main() {
 	todoHandler := todo.NewTodoHandler()
 	todoHandler.RegisterTodoRoutes(e)
 
-	e.Logger.Fatal(e.Start(":1323"))
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+	go func() {
+		if err := e.Start(":1323"); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			e.Logger.Fatal("shutting down the server")
+		}
+	}()
+
+	<-ctx.Done()
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	if err := e.Shutdown(ctx); err != nil {
+		e.Logger.Fatal(err)
+	}
 }

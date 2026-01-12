@@ -6,11 +6,6 @@ vars:
   GREETING: Hello, World!
 
 tasks:
-  default:
-    cmds:
-      - echo "{{.GREETING}}"
-    silent: true
-
   build:
     cmds:
       - task: build:unix
@@ -51,3 +46,6 @@ tasks:
     cmds:
       - ./bin/server.exe
 
+  test:
+    cmds:
+      - go test ./...

@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"echo-sample2/internal/domains/todo"
+	"echo-sample2/internal/domains/todo/handler"
 	"echo-sample2/internal/tracing"
 	"errors"
 	"net/http"
@@ -50,7 +50,7 @@ func main() {
 		},
 	}))
 
-	todoHandler := todo.NewTodoHandler()
+	todoHandler := handler.NewTodoHandler()
 	todoHandler.RegisterTodoRoutes(e)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)

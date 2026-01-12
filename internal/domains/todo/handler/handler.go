@@ -8,16 +8,23 @@ import (
 
 type TodoHandler struct{}
 
-type getTodoParams struct {
-	ID int64 `param:"id"`
+type createTodoRequest struct {
+	Title       string `json:"title" validate:"required"`
+	Description string `json:"description" validate:"required"`
 }
 
-type updateTodoParams struct {
-	ID int64 `param:"id"`
+type getTodoRequest struct {
+	ID int64 `param:"id" validate:"required"`
 }
 
-type deleteTodoParams struct {
-	ID int64 `param:"id"`
+type updateTodoRequest struct {
+	ID          int64  `param:"id" validate:"required"`
+	Title       string `json:"title" validate:"required"`
+	Description string `json:"description" validate:"required"`
+}
+
+type deleteTodoRequest struct {
+	ID int64 `param:"id" validate:"required"`
 }
 
 func NewTodoHandler() *TodoHandler {
@@ -33,14 +40,26 @@ func (h *TodoHandler) RegisterTodoRoutes(e *echo.Echo) {
 	g.DELETE("/:id", h.deleteTodo)
 }
 
-func (h *TodoHandler) createTodo(c echo.Context) error { return c.NoContent(http.StatusCreated) }
+func (h *TodoHandler) createTodo(c echo.Context) error {
+	req := new(createTodoRequest)
+
+	if err := c.Bind(req); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	return c.NoContent(http.StatusCreated)
+}
 
 func (h *TodoHandler) getTodos(c echo.Context) error { return c.String(http.StatusOK, "Get todos") }
 
 func (h *TodoHandler) getTodo(c echo.Context) error {
-	params := new(getTodoParams)
+	req := new(getTodoRequest)
 
-	if err := c.Bind(params); err != nil {
+	if err := c.Bind(req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
@@ -48,19 +67,22 @@ func (h *TodoHandler) getTodo(c echo.Context) error {
 }
 
 func (h *TodoHandler) updateTodo(c echo.Context) error {
-	params := new(updateTodoParams)
-
-	if err := c.Bind(params); err != nil {
+	req := new(updateTodoRequest)
+	if err := c.Bind(req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	if err := c.Validate(req); err != nil {
+		return err
 	}
 
 	return c.NoContent(http.StatusNoContent)
 }
 
 func (h *TodoHandler) deleteTodo(c echo.Context) error {
-	params := new(deleteTodoParams)
+	req := new(deleteTodoRequest)
 
-	if err := c.Bind(params); err != nil {
+	if err := c.Bind(req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 

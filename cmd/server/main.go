@@ -4,12 +4,14 @@ import (
 	"context"
 	"echo-sample2/internal/domains/todo/handler"
 	"echo-sample2/internal/tracing"
+	customValidator "echo-sample2/internal/validator"
 	"errors"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"
@@ -50,6 +52,7 @@ func main() {
 		},
 	}))
 
+	e.Validator = &customValidator.CustomValidator{Validator: validator.New()}
 	todoHandler := handler.NewTodoHandler()
 	todoHandler.RegisterTodoRoutes(e)
 

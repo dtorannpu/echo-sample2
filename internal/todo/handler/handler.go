@@ -1,12 +1,20 @@
 package handler
 
 import (
+	"context"
+	"echo-sample2/internal/todo/dto"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 )
 
-type TodoHandler struct{}
+type TodoService interface {
+	Create(ctx context.Context, input dto.CreateTodoInput) error
+}
+
+type TodoHandler struct {
+	service TodoService
+}
 
 type createTodoRequest struct {
 	Title       string `json:"title" validate:"required"`
@@ -27,8 +35,8 @@ type deleteTodoRequest struct {
 	ID int64 `param:"id" validate:"required"`
 }
 
-func NewTodoHandler() *TodoHandler {
-	return &TodoHandler{}
+func NewTodoHandler(service TodoService) *TodoHandler {
+	return &TodoHandler{service: service}
 }
 
 func (h *TodoHandler) RegisterTodoRoutes(e *echo.Echo) {
@@ -48,6 +56,16 @@ func (h *TodoHandler) createTodo(c echo.Context) error {
 	}
 
 	if err := c.Validate(req); err != nil {
+		return err
+	}
+
+	input := dto.CreateTodoInput{
+		Title:       req.Title,
+		Description: req.Description,
+	}
+
+	err := h.service.Create(c.Request().Context(), input)
+	if err != nil {
 		return err
 	}
 

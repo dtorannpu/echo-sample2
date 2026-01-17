@@ -1,8 +1,9 @@
-package infrastructure
+package repository
 
 import (
 	"context"
 	"echo-sample2/internal/todo/domain"
+	"echo-sample2/internal/todo/infrastructure"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -16,7 +17,7 @@ func TestTodoRepository_Save(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
 	require.NoError(t, err)
 
-	err = db.AutoMigrate(&TodoEntity{})
+	err = db.AutoMigrate(&infrastructure.TodoEntity{})
 	require.NoError(t, err)
 
 	repo := NewTodoRepository(db)
@@ -33,7 +34,7 @@ func TestTodoRepository_Save(t *testing.T) {
 		assert.NoError(t, err)
 
 		// 検証
-		var entity TodoEntity
+		var entity infrastructure.TodoEntity
 		err = db.First(&entity, "id = ?", todo.ID).Error
 		assert.NoError(t, err)
 		assert.Equal(t, todo.ID, entity.ID)

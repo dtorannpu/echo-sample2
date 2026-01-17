@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"echo-sample2/internal/domains/todo/handler"
+	"echo-sample2/internal/todo/handler"
 	"echo-sample2/internal/tracing"
 	customValidator "echo-sample2/internal/validator"
 	"errors"

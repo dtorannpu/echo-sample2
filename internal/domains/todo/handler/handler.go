@@ -68,6 +68,7 @@ func (h *TodoHandler) getTodo(c echo.Context) error {
 
 func (h *TodoHandler) updateTodo(c echo.Context) error {
 	req := new(updateTodoRequest)
+
 	if err := c.Bind(req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"echo-sample2/internal/todo/handler"
+	"echo-sample2/internal/todo/infrastructure"
 	"echo-sample2/internal/tracing"
 	customValidator "echo-sample2/internal/validator"
 	"errors"
@@ -18,6 +19,8 @@ import (
 	"go.opentelemetry.io/contrib/instrumentation/github.com/labstack/echo/otelecho"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/propagation"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -53,6 +56,16 @@ func main() {
 	}))
 
 	e.Validator = &customValidator.CustomValidator{Validator: validator.New()}
+
+	// TODO: DB接続情報を適切に設定する
+	db, err := gorm.Open(sqlite.Open("todo.db"), &gorm.Config{})
+	if err != nil {
+		logger.Fatal().Err(err).Msg("failed to connect database")
+	}
+
+	todoRepo := infrastructure.NewTodoRepository(db)
+	_ = todoRepo // 今後handler等で使用する
+
 	todoHandler := handler.NewTodoHandler()
 	todoHandler.RegisterTodoRoutes(e)
 

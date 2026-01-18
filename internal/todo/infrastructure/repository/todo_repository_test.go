@@ -85,9 +85,7 @@ func TestTodoRepository_FindAll(t *testing.T) {
 			Description: "Description 2",
 		}
 
-		err := db.Create(todo1).Error
-		require.NoError(t, err)
-		err = db.Create(todo2).Error
+		err := db.Create([]*infrastructure.TodoEntity{todo1, todo2}).Error
 		require.NoError(t, err)
 
 		todos, err := repo.FindAll(ctx)
@@ -121,5 +119,51 @@ func TestTodoRepository_FindAll(t *testing.T) {
 		todos, err := repo.FindAll(ctx)
 		assert.Error(t, err)
 		assert.Nil(t, todos)
+	})
+}
+
+func TestTodoRepository_FindById(t *testing.T) {
+	// Setup
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+
+	err = db.AutoMigrate(&infrastructure.TodoEntity{})
+	require.NoError(t, err)
+
+	repo := NewTodoRepository(db)
+	ctx := context.Background()
+
+	t.Run("IDを指定してTodoを取得できること", func(t *testing.T) {
+		todo := &infrastructure.TodoEntity{
+			ID:          domain.NewTodoID(),
+			Title:       "Title",
+			Description: "Description",
+		}
+
+		err := db.Create(todo).Error
+		require.NoError(t, err)
+
+		found, err := repo.FindById(ctx, todo.ID)
+		assert.NoError(t, err)
+		assert.NotNil(t, found)
+		assert.Equal(t, todo.ID, found.ID)
+		assert.Equal(t, todo.Title, found.Title)
+		assert.Equal(t, todo.Description, found.Description)
+	})
+
+	t.Run("存在しないIDの場合はnilを返すこと", func(t *testing.T) {
+		found, err := repo.FindById(ctx, domain.NewTodoID())
+		assert.NoError(t, err)
+		assert.Nil(t, found)
+	})
+
+	t.Run("データベースエラーが発生した場合、エラーを返すこと", func(t *testing.T) {
+		// テーブルをドロップしてエラーを発生させる
+		err := db.Migrator().DropTable(&infrastructure.TodoEntity{})
+		require.NoError(t, err)
+
+		found, err := repo.FindById(ctx, domain.NewTodoID())
+		assert.Error(t, err)
+		assert.Nil(t, found)
 	})
 }

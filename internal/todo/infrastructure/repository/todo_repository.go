@@ -4,6 +4,7 @@ import (
 	"context"
 	"echo-sample2/internal/todo/domain"
 	"echo-sample2/internal/todo/infrastructure"
+	"errors"
 
 	"gorm.io/gorm"
 )
@@ -39,6 +40,23 @@ func (r *TodoRepository) FindAll(ctx context.Context) ([]*domain.Todo, error) {
 	}
 
 	return res, nil
+}
+
+func (r *TodoRepository) FindById(ctx context.Context, id domain.TodoID) (*domain.Todo, error) {
+	todo, err := gorm.G[infrastructure.TodoEntity](r.db).Where(&infrastructure.TodoEntity{ID: id}, id).First(ctx)
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	return &domain.Todo{
+		ID:          todo.ID,
+		Title:       todo.Title,
+		Description: todo.Description,
+	}, nil
 }
 
 func toEntity(todo *domain.Todo) *infrastructure.TodoEntity {

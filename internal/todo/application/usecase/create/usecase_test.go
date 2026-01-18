@@ -1,4 +1,4 @@
-package usecase
+package create
 
 import (
 	"context"
@@ -49,10 +49,10 @@ func TestCreateTodoUseCase_Execute(t *testing.T) {
 		mockTX := new(MockTransaction)
 		mockRepo := new(MockTodoRepository)
 
-		uc := NewCreateTodoUseCase(mockTM)
+		uc := New(mockTM)
 
 		ctx := context.Background()
-		command := CreateTodoCommand{
+		command := Command{
 			Title:       "テストタイトル",
 			Description: "テスト説明",
 		}
@@ -80,10 +80,10 @@ func TestCreateTodoUseCase_Execute(t *testing.T) {
 		mockTX := new(MockTransaction)
 		mockRepo := new(MockTodoRepository)
 
-		uc := NewCreateTodoUseCase(mockTM)
+		uc := New(mockTM)
 
 		ctx := context.Background()
-		command := CreateTodoCommand{
+		command := Command{
 			Title:       "テストタイトル",
 			Description: "テスト説明",
 		}

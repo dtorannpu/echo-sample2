@@ -1,4 +1,4 @@
-package usecase
+package list
 
 import (
 	"context"
@@ -9,7 +9,7 @@ type TodoRepository interface {
 	FindAll(ctx context.Context) ([]*domain.Todo, error)
 }
 
-type GetTodosUseCase struct {
+type UseCase struct {
 	repo TodoRepository
 }
 
@@ -18,35 +18,35 @@ type Todo struct {
 	Name string
 }
 
-type TodoResult struct {
+type TodoItem struct {
 	ID          domain.TodoID
 	Title       string
 	Description string
 }
 
-type GetTodosResult struct {
-	Todos []*TodoResult
+type Result struct {
+	Todos []*TodoItem
 }
 
-func NewGetTodosUseCase(repo TodoRepository) *GetTodosUseCase {
-	return &GetTodosUseCase{repo: repo}
+func New(repo TodoRepository) *UseCase {
+	return &UseCase{repo: repo}
 }
 
-func (u *GetTodosUseCase) Execute(ctx context.Context) (*GetTodosResult, error) {
+func (u *UseCase) Execute(ctx context.Context) (*Result, error) {
 	todos, err := u.repo.FindAll(ctx)
 	if err != nil {
 		return nil, err
 	}
 
-	res := make([]*TodoResult, len(todos))
+	res := make([]*TodoItem, len(todos))
 
 	for i, todo := range todos {
-		res[i] = &TodoResult{
+		res[i] = &TodoItem{
 			ID:          todo.ID,
 			Title:       todo.Title,
 			Description: todo.Description,
 		}
 	}
 
-	return &GetTodosResult{Todos: res}, nil
+	return &Result{Todos: res}, nil
 }

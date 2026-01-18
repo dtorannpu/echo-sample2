@@ -1,4 +1,4 @@
-package usecase
+package list
 
 import (
 	"context"
@@ -26,7 +26,7 @@ func TestGetTodosUseCase_Execute(t *testing.T) {
 	t.Run("正常にTodo一覧が取得できること", func(t *testing.T) {
 		// 準備
 		mockRepo := new(MockGetTodosRepository)
-		uc := NewGetTodosUseCase(mockRepo)
+		uc := New(mockRepo)
 		ctx := context.Background()
 
 		id1 := domain.NewTodoID()
@@ -69,7 +69,7 @@ func TestGetTodosUseCase_Execute(t *testing.T) {
 	t.Run("リポジトリでエラーが発生した場合、エラーを返すこと", func(t *testing.T) {
 		// 準備
 		mockRepo := new(MockGetTodosRepository)
-		uc := NewGetTodosUseCase(mockRepo)
+		uc := New(mockRepo)
 		ctx := context.Background()
 
 		expectedErr := errors.New("repository error")
@@ -88,7 +88,7 @@ func TestGetTodosUseCase_Execute(t *testing.T) {
 	t.Run("Todoが空の場合、空のリストを返すこと", func(t *testing.T) {
 		// 準備
 		mockRepo := new(MockGetTodosRepository)
-		uc := NewGetTodosUseCase(mockRepo)
+		uc := New(mockRepo)
 		ctx := context.Background()
 
 		mockRepo.On("FindAll", ctx).Return([]*domain.Todo{}, nil)

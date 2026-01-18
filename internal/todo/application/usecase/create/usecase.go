@@ -1,4 +1,4 @@
-package usecase
+package create
 
 import (
 	"context"
@@ -6,25 +6,25 @@ import (
 	"echo-sample2/internal/todo/domain/repository"
 )
 
-type CreateTodoUseCase struct {
+type UseCase struct {
 	txManager repository.TransactionManager
 }
-type CreateTodoCommand struct {
+type Command struct {
 	Title       string
 	Description string
 }
 
-func NewCreateTodoUseCase(tm repository.TransactionManager) *CreateTodoUseCase {
-	return &CreateTodoUseCase{txManager: tm}
+func New(tm repository.TransactionManager) *UseCase {
+	return &UseCase{txManager: tm}
 }
 
-func (u *CreateTodoUseCase) Execute(ctx context.Context, request CreateTodoCommand) error {
+func (u *UseCase) Execute(ctx context.Context, request Command) error {
 	return u.txManager.Do(ctx, func(tx repository.Transaction) error {
 		return tx.TodoRepo().Save(ctx, createTodo(request))
 	})
 }
 
-func createTodo(request CreateTodoCommand) *domain.Todo {
+func createTodo(request Command) *domain.Todo {
 	return &domain.Todo{
 		ID:          domain.NewTodoID(),
 		Title:       request.Title,

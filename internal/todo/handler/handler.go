@@ -2,18 +2,19 @@ package handler
 
 import (
 	"context"
-	"echo-sample2/internal/todo/application/usecase"
+	"echo-sample2/internal/todo/application/usecase/create"
+	"echo-sample2/internal/todo/application/usecase/list"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 )
 
 type CreateTodoUseCase interface {
-	Execute(ctx context.Context, command usecase.CreateTodoCommand) error
+	Execute(ctx context.Context, command create.Command) error
 }
 
 type GetTodosUseCase interface {
-	Execute(ctx context.Context) (*usecase.GetTodosResult, error)
+	Execute(ctx context.Context) (*list.Result, error)
 }
 
 type TodoHandler struct {
@@ -74,7 +75,7 @@ func (h *TodoHandler) createTodo(c echo.Context) error {
 		return err
 	}
 
-	command := usecase.CreateTodoCommand{
+	command := create.Command{
 		Title:       req.Title,
 		Description: req.Description,
 	}

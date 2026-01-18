@@ -2,7 +2,8 @@ package handler
 
 import (
 	"context"
-	"echo-sample2/internal/todo/application/usecase"
+	"echo-sample2/internal/todo/application/usecase/create"
+	"echo-sample2/internal/todo/application/usecase/list"
 	"echo-sample2/internal/todo/domain"
 	customValidator "echo-sample2/internal/validator"
 	"fmt"
@@ -22,7 +23,7 @@ type MockCreateTodoUseCase struct {
 	mock.Mock
 }
 
-func (m *MockCreateTodoUseCase) Execute(ctx context.Context, command usecase.CreateTodoCommand) error {
+func (m *MockCreateTodoUseCase) Execute(ctx context.Context, command create.Command) error {
 	args := m.Called(ctx, command)
 	return args.Error(0)
 }
@@ -31,12 +32,12 @@ type MockGetTodosUseCase struct {
 	mock.Mock
 }
 
-func (m *MockGetTodosUseCase) Execute(ctx context.Context) (*usecase.GetTodosResult, error) {
+func (m *MockGetTodosUseCase) Execute(ctx context.Context) (*list.Result, error) {
 	args := m.Called(ctx)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*usecase.GetTodosResult), args.Error(1)
+	return args.Get(0).(*list.Result), args.Error(1)
 }
 
 func TestTodoHandler(t *testing.T) {
@@ -53,7 +54,7 @@ func TestTodoHandler(t *testing.T) {
 	t.Run("CreateTodo", func(t *testing.T) {
 		t.Run("正常系", func(t *testing.T) {
 			e, _, mockUseCase, _ := setup()
-			command := usecase.CreateTodoCommand{
+			command := create.Command{
 				Title:       "test",
 				Description: "description",
 			}
@@ -82,7 +83,7 @@ func TestTodoHandler(t *testing.T) {
 
 		t.Run("ユースケースでエラーが発生したパターン", func(t *testing.T) {
 			e, _, mockUseCase, _ := setup()
-			command := usecase.CreateTodoCommand{
+			command := create.Command{
 				Title:       "test",
 				Description: "description",
 			}
@@ -101,7 +102,7 @@ func TestTodoHandler(t *testing.T) {
 	t.Run("GetTodos", func(t *testing.T) {
 		t.Run("正常系", func(t *testing.T) {
 			e, _, _, mockGetUseCase := setup()
-			mockGetUseCase.On("Execute", mock.Anything).Return(&usecase.GetTodosResult{Todos: []*usecase.TodoResult{}}, nil)
+			mockGetUseCase.On("Execute", mock.Anything).Return(&list.Result{Todos: []*list.TodoItem{}}, nil)
 			req := httptest.NewRequest(http.MethodGet, "/todos", nil)
 			rec := httptest.NewRecorder()
 			e.ServeHTTP(rec, req)
@@ -113,8 +114,8 @@ func TestTodoHandler(t *testing.T) {
 		t.Run("データが返却されるパターン", func(t *testing.T) {
 			e, _, _, mockGetUseCase := setup()
 			id := uuid.New()
-			mockGetUseCase.On("Execute", mock.Anything).Return(&usecase.GetTodosResult{
-				Todos: []*usecase.TodoResult{
+			mockGetUseCase.On("Execute", mock.Anything).Return(&list.Result{
+				Todos: []*list.TodoItem{
 					{
 						ID:          domain.TodoID(id),
 						Title:       "test title",

@@ -2,7 +2,8 @@ package main
 
 import (
 	"context"
-	"echo-sample2/internal/todo/application/usecase"
+	"echo-sample2/internal/todo/application/usecase/create"
+	"echo-sample2/internal/todo/application/usecase/list"
 	"echo-sample2/internal/todo/handler"
 	dbinfra "echo-sample2/internal/todo/infrastructure/db"
 	"echo-sample2/internal/todo/infrastructure/repository"
@@ -63,8 +64,8 @@ func main() {
 	}
 	txManager := dbinfra.NewGormTxManager(db.DB)
 	todoRepository := repository.NewTodoRepository(db.DB)
-	createTodoUseCase := usecase.NewCreateTodoUseCase(txManager)
-	getTodosUsecase := usecase.NewGetTodosUseCase(todoRepository)
+	createTodoUseCase := create.New(txManager)
+	getTodosUsecase := list.New(todoRepository)
 	todoHandler := handler.NewTodoHandler(createTodoUseCase, getTodosUsecase)
 	todoHandler.RegisterTodoRoutes(e)
 

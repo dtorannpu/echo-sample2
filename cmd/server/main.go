@@ -5,6 +5,7 @@ import (
 	"echo-sample2/internal/todo/application/usecase/create"
 	"echo-sample2/internal/todo/application/usecase/get"
 	"echo-sample2/internal/todo/application/usecase/list"
+	"echo-sample2/internal/todo/application/usecase/update"
 	"echo-sample2/internal/todo/handler"
 	dbinfra "echo-sample2/internal/todo/infrastructure/db"
 	"echo-sample2/internal/todo/infrastructure/repository"
@@ -66,9 +67,10 @@ func main() {
 	txManager := dbinfra.NewGormTxManager(db.DB)
 	todoRepository := repository.NewTodoRepository(db.DB)
 	createTodoUseCase := create.New(txManager)
-	getTodosUsecase := list.New(todoRepository)
-	getTodoUsecase := get.New(todoRepository)
-	todoHandler := handler.NewTodoHandler(createTodoUseCase, getTodosUsecase, getTodoUsecase)
+	getTodosUseCase := list.New(todoRepository)
+	getTodoUseCase := get.New(todoRepository)
+	updateTodoUseCase := update.New(txManager)
+	todoHandler := handler.NewTodoHandler(createTodoUseCase, getTodosUseCase, getTodoUseCase, updateTodoUseCase)
 	todoHandler.RegisterTodoRoutes(e)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)

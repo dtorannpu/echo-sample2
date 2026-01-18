@@ -5,6 +5,7 @@ import (
 	"echo-sample2/internal/todo/application/usecase/create"
 	"echo-sample2/internal/todo/application/usecase/get"
 	"echo-sample2/internal/todo/application/usecase/list"
+	"echo-sample2/internal/todo/application/usecase/update"
 	"echo-sample2/internal/todo/domain"
 	domainError "echo-sample2/internal/todo/domain/errors"
 	"errors"
@@ -25,10 +26,15 @@ type GetUseCase interface {
 	Execute(ctx context.Context, command get.Command) (*get.Todo, error)
 }
 
+type UpdateUseCase interface {
+	Execute(ctx context.Context, command update.Command) error
+}
+
 type TodoHandler struct {
 	createUseCase CreateUseCase
 	listUseCase   ListUseCase
 	getUseCase    GetUseCase
+	updateUseCase UpdateUseCase
 }
 
 type createTodoRequest struct {
@@ -60,11 +66,12 @@ type deleteTodoRequest struct {
 	ID string `param:"id" validate:"required"`
 }
 
-func NewTodoHandler(createTodoUseCase CreateUseCase, listUseCase ListUseCase, getUseCase GetUseCase) *TodoHandler {
+func NewTodoHandler(createTodoUseCase CreateUseCase, listUseCase ListUseCase, getUseCase GetUseCase, updateUseCase UpdateUseCase) *TodoHandler {
 	return &TodoHandler{
 		createUseCase: createTodoUseCase,
 		listUseCase:   listUseCase,
 		getUseCase:    getUseCase,
+		updateUseCase: updateUseCase,
 	}
 }
 
@@ -161,11 +168,16 @@ func (h *TodoHandler) updateTodo(c echo.Context) error {
 		return err
 	}
 
-	_, err := domain.NewTodoIDFromString(req.ID)
+	id, err := domain.NewTodoIDFromString(req.ID)
 	var invalidErr *domainError.ErrInvalidTodoID
 	if errors.As(err, &invalidErr) {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid todo ID")
 	}
+	if err != nil {
+		return err
+	}
+
+	err = h.updateUseCase.Execute(c.Request().Context(), update.Command{ID: *id, Title: req.Title, Description: req.Description})
 	if err != nil {
 		return err
 	}

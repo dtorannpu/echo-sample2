@@ -2,7 +2,7 @@ package handler
 
 import (
 	"context"
-	"echo-sample2/internal/todo/dto"
+	"echo-sample2/internal/todo/application/usecase"
 	customValidator "echo-sample2/internal/validator"
 	"net/http"
 	"net/http/httptest"
@@ -15,33 +15,33 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-type MockTodoService struct {
+type MockCreateTodoUseCase struct {
 	mock.Mock
 }
 
-func (m *MockTodoService) Create(ctx context.Context, input dto.CreateTodoInput) error {
-	args := m.Called(ctx, input)
+func (m *MockCreateTodoUseCase) Execute(ctx context.Context, command usecase.CreateTodoCommand) error {
+	args := m.Called(ctx, command)
 	return args.Error(0)
 }
 
 func TestTodoHandler(t *testing.T) {
-	setup := func() (*echo.Echo, *TodoHandler, *MockTodoService) {
+	setup := func() (*echo.Echo, *TodoHandler, *MockCreateTodoUseCase) {
 		e := echo.New()
 		e.Validator = &customValidator.CustomValidator{Validator: validator.New()}
-		mockService := new(MockTodoService)
-		h := NewTodoHandler(mockService)
+		mockUseCase := new(MockCreateTodoUseCase)
+		h := NewTodoHandler(mockUseCase)
 		h.RegisterTodoRoutes(e)
-		return e, h, mockService
+		return e, h, mockUseCase
 	}
 
 	t.Run("CreateTodo", func(t *testing.T) {
 		t.Run("正常系", func(t *testing.T) {
-			e, _, mockService := setup()
-			input := dto.CreateTodoInput{
+			e, _, mockUseCase := setup()
+			command := usecase.CreateTodoCommand{
 				Title:       "test",
 				Description: "description",
 			}
-			mockService.On("Create", mock.Anything, input).Return(nil)
+			mockUseCase.On("Execute", mock.Anything, command).Return(nil)
 
 			req := httptest.NewRequest(http.MethodPost, "/todos", strings.NewReader(`{"title": "test", "description": "description"}`))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -50,18 +50,18 @@ func TestTodoHandler(t *testing.T) {
 
 			require.Equal(t, http.StatusCreated, rec.Code)
 			require.Equal(t, "", rec.Body.String())
-			mockService.AssertExpectations(t)
+			mockUseCase.AssertExpectations(t)
 		})
 
 		t.Run("バリデーションエラー", func(t *testing.T) {
-			e, _, mockService := setup()
+			e, _, mockUseCase := setup()
 			req := httptest.NewRequest(http.MethodPost, "/todos", strings.NewReader(`{}`))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			e.ServeHTTP(rec, req)
 
 			require.Equal(t, http.StatusBadRequest, rec.Code)
-			mockService.AssertNotCalled(t, "Create", mock.Anything, mock.Anything)
+			mockUseCase.AssertNotCalled(t, "Execute", mock.Anything, mock.Anything)
 		})
 	})
 

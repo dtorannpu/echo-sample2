@@ -1,27 +1,30 @@
-package todo
+package usecase
 
 import (
 	"context"
 	"echo-sample2/internal/todo/domain"
 	"echo-sample2/internal/todo/domain/repository"
-	"echo-sample2/internal/todo/dto"
 )
 
-type TodoService struct {
+type CreateTodoUseCase struct {
 	txManager repository.TransactionManager
 }
-
-func NewTodoService(tm repository.TransactionManager) *TodoService {
-	return &TodoService{txManager: tm}
+type CreateTodoCommand struct {
+	Title       string
+	Description string
 }
 
-func (s *TodoService) Create(ctx context.Context, request dto.CreateTodoInput) error {
+func NewCreateTodoUseCase(tm repository.TransactionManager) *CreateTodoUseCase {
+	return &CreateTodoUseCase{txManager: tm}
+}
+
+func (s *CreateTodoUseCase) Execute(ctx context.Context, request CreateTodoCommand) error {
 	return s.txManager.Do(ctx, func(tx repository.Transaction) error {
 		return tx.TodoRepo().Save(ctx, createTodo(request))
 	})
 }
 
-func createTodo(request dto.CreateTodoInput) *domain.Todo {
+func createTodo(request CreateTodoCommand) *domain.Todo {
 	return &domain.Todo{
 		ID:          domain.NewTodoID(),
 		Title:       request.Title,

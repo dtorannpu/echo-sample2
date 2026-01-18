@@ -2,18 +2,18 @@ package handler
 
 import (
 	"context"
-	"echo-sample2/internal/todo/dto"
+	"echo-sample2/internal/todo/application/usecase"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 )
 
-type TodoService interface {
-	Create(ctx context.Context, input dto.CreateTodoInput) error
+type CreateTodoUseCase interface {
+	Execute(ctx context.Context, command usecase.CreateTodoCommand) error
 }
 
 type TodoHandler struct {
-	service TodoService
+	useCase CreateTodoUseCase
 }
 
 type createTodoRequest struct {
@@ -35,8 +35,8 @@ type deleteTodoRequest struct {
 	ID int64 `param:"id" validate:"required"`
 }
 
-func NewTodoHandler(service TodoService) *TodoHandler {
-	return &TodoHandler{service: service}
+func NewTodoHandler(useCase CreateTodoUseCase) *TodoHandler {
+	return &TodoHandler{useCase: useCase}
 }
 
 func (h *TodoHandler) RegisterTodoRoutes(e *echo.Echo) {
@@ -59,12 +59,12 @@ func (h *TodoHandler) createTodo(c echo.Context) error {
 		return err
 	}
 
-	input := dto.CreateTodoInput{
+	command := usecase.CreateTodoCommand{
 		Title:       req.Title,
 		Description: req.Description,
 	}
 
-	err := h.service.Create(c.Request().Context(), input)
+	err := h.useCase.Execute(c.Request().Context(), command)
 	if err != nil {
 		return err
 	}

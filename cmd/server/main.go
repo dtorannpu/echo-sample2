@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"echo-sample2/internal/todo"
+	"echo-sample2/internal/todo/application/usecase"
 	"echo-sample2/internal/todo/handler"
 	dbinfra "echo-sample2/internal/todo/infrastructure/db"
 	"echo-sample2/internal/tracing"
@@ -61,8 +61,8 @@ func main() {
 		logger.Fatal().Err(err)
 	}
 	txManager := dbinfra.NewGormTxManager(db.DB)
-	todoService := todo.NewTodoService(txManager)
-	todoHandler := handler.NewTodoHandler(todoService)
+	createTodoUseCase := usecase.NewCreateTodoUseCase(txManager)
+	todoHandler := handler.NewTodoHandler(createTodoUseCase)
 	todoHandler.RegisterTodoRoutes(e)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)

@@ -18,8 +18,8 @@ func NewCreateTodoUseCase(tm repository.TransactionManager) *CreateTodoUseCase {
 	return &CreateTodoUseCase{txManager: tm}
 }
 
-func (s *CreateTodoUseCase) Execute(ctx context.Context, request CreateTodoCommand) error {
-	return s.txManager.Do(ctx, func(tx repository.Transaction) error {
+func (u *CreateTodoUseCase) Execute(ctx context.Context, request CreateTodoCommand) error {
+	return u.txManager.Do(ctx, func(tx repository.Transaction) error {
 		return tx.TodoRepo().Save(ctx, createTodo(request))
 	})
 }

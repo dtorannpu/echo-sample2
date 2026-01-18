@@ -5,6 +5,7 @@ import (
 	"echo-sample2/internal/todo/application/usecase"
 	"echo-sample2/internal/todo/handler"
 	dbinfra "echo-sample2/internal/todo/infrastructure/db"
+	"echo-sample2/internal/todo/infrastructure/repository"
 	"echo-sample2/internal/tracing"
 	customValidator "echo-sample2/internal/validator"
 	"errors"
@@ -61,8 +62,10 @@ func main() {
 		logger.Fatal().Err(err)
 	}
 	txManager := dbinfra.NewGormTxManager(db.DB)
+	todoRepository := repository.NewTodoRepository(db.DB)
 	createTodoUseCase := usecase.NewCreateTodoUseCase(txManager)
-	todoHandler := handler.NewTodoHandler(createTodoUseCase)
+	getTodosUsecase := usecase.NewGetTodosUseCase(todoRepository)
+	todoHandler := handler.NewTodoHandler(createTodoUseCase, getTodosUsecase)
 	todoHandler.RegisterTodoRoutes(e)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)

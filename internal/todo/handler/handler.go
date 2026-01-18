@@ -12,13 +12,28 @@ type CreateTodoUseCase interface {
 	Execute(ctx context.Context, command usecase.CreateTodoCommand) error
 }
 
+type GetTodosUseCase interface {
+	Execute(ctx context.Context) (*usecase.GetTodosResult, error)
+}
+
 type TodoHandler struct {
-	useCase CreateTodoUseCase
+	createTodoUseCase CreateTodoUseCase
+	getTodosUseCase   GetTodosUseCase
 }
 
 type createTodoRequest struct {
 	Title       string `json:"title" validate:"required"`
 	Description string `json:"description" validate:"required"`
+}
+
+type todoResponse struct {
+	ID          string `json:"id"`
+	Title       string `json:"title"`
+	Description string `json:"description"`
+}
+
+type getTodosResponse struct {
+	Todos []*todoResponse `json:"todos"`
 }
 
 type getTodoRequest struct {
@@ -35,8 +50,8 @@ type deleteTodoRequest struct {
 	ID int64 `param:"id" validate:"required"`
 }
 
-func NewTodoHandler(useCase CreateTodoUseCase) *TodoHandler {
-	return &TodoHandler{useCase: useCase}
+func NewTodoHandler(createTodoUseCase CreateTodoUseCase, getTodosUseCase GetTodosUseCase) *TodoHandler {
+	return &TodoHandler{createTodoUseCase: createTodoUseCase, getTodosUseCase: getTodosUseCase}
 }
 
 func (h *TodoHandler) RegisterTodoRoutes(e *echo.Echo) {
@@ -64,7 +79,7 @@ func (h *TodoHandler) createTodo(c echo.Context) error {
 		Description: req.Description,
 	}
 
-	err := h.useCase.Execute(c.Request().Context(), command)
+	err := h.createTodoUseCase.Execute(c.Request().Context(), command)
 	if err != nil {
 		return err
 	}
@@ -72,7 +87,24 @@ func (h *TodoHandler) createTodo(c echo.Context) error {
 	return c.NoContent(http.StatusCreated)
 }
 
-func (h *TodoHandler) getTodos(c echo.Context) error { return c.String(http.StatusOK, "Get todos") }
+func (h *TodoHandler) getTodos(c echo.Context) error {
+	todoRes, err := h.getTodosUseCase.Execute(c.Request().Context())
+	if err != nil {
+		return err
+	}
+
+	res := make([]*todoResponse, len(todoRes.Todos))
+
+	for i, todo := range todoRes.Todos {
+		res[i] = &todoResponse{
+			ID:          todo.ID.String(),
+			Title:       todo.Title,
+			Description: todo.Description,
+		}
+	}
+
+	return c.JSON(http.StatusOK, &getTodosResponse{Todos: res})
+}
 
 func (h *TodoHandler) getTodo(c echo.Context) error {
 	req := new(getTodoRequest)

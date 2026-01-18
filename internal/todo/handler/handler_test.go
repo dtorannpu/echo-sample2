@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"echo-sample2/internal/todo/application/usecase/create"
+	"echo-sample2/internal/todo/application/usecase/get"
 	"echo-sample2/internal/todo/application/usecase/list"
 	"echo-sample2/internal/todo/domain"
 	customValidator "echo-sample2/internal/validator"
@@ -40,20 +41,33 @@ func (m *MockGetTodosUseCase) Execute(ctx context.Context) (*list.Result, error)
 	return args.Get(0).(*list.Result), args.Error(1)
 }
 
+type MockGetTodoUseCase struct {
+	mock.Mock
+}
+
+func (m *MockGetTodoUseCase) Execute(ctx context.Context, command get.Command) (*get.Todo, error) {
+	args := m.Called(ctx, command)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*get.Todo), args.Error(1)
+}
+
 func TestTodoHandler(t *testing.T) {
-	setup := func() (*echo.Echo, *TodoHandler, *MockCreateTodoUseCase, *MockGetTodosUseCase) {
+	setup := func() (*echo.Echo, *TodoHandler, *MockCreateTodoUseCase, *MockGetTodosUseCase, *MockGetTodoUseCase) {
 		e := echo.New()
 		e.Validator = &customValidator.CustomValidator{Validator: validator.New()}
 		mockCreateUseCase := new(MockCreateTodoUseCase)
-		mockGetUseCase := new(MockGetTodosUseCase)
-		h := NewTodoHandler(mockCreateUseCase, mockGetUseCase)
+		mockGetTodosUseCase := new(MockGetTodosUseCase)
+		mockGetTodoUseCase := new(MockGetTodoUseCase)
+		h := NewTodoHandler(mockCreateUseCase, mockGetTodosUseCase, mockGetTodoUseCase)
 		h.RegisterTodoRoutes(e)
-		return e, h, mockCreateUseCase, mockGetUseCase
+		return e, h, mockCreateUseCase, mockGetTodosUseCase, mockGetTodoUseCase
 	}
 
 	t.Run("CreateTodo", func(t *testing.T) {
 		t.Run("正常系", func(t *testing.T) {
-			e, _, mockUseCase, _ := setup()
+			e, _, mockUseCase, _, _ := setup()
 			command := create.Command{
 				Title:       "test",
 				Description: "description",
@@ -71,18 +85,17 @@ func TestTodoHandler(t *testing.T) {
 		})
 
 		t.Run("バリデーションエラー", func(t *testing.T) {
-			e, _, mockUseCase, _ := setup()
+			e, _, _, _, _ := setup()
 			req := httptest.NewRequest(http.MethodPost, "/todos", strings.NewReader(`{}`))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			e.ServeHTTP(rec, req)
 
 			require.Equal(t, http.StatusBadRequest, rec.Code)
-			mockUseCase.AssertNotCalled(t, "Execute", mock.Anything, mock.Anything)
 		})
 
 		t.Run("ユースケースでエラーが発生したパターン", func(t *testing.T) {
-			e, _, mockUseCase, _ := setup()
+			e, _, mockUseCase, _, _ := setup()
 			command := create.Command{
 				Title:       "test",
 				Description: "description",
@@ -101,8 +114,8 @@ func TestTodoHandler(t *testing.T) {
 
 	t.Run("GetTodos", func(t *testing.T) {
 		t.Run("正常系", func(t *testing.T) {
-			e, _, _, mockGetUseCase := setup()
-			mockGetUseCase.On("Execute", mock.Anything).Return(&list.Result{Todos: []*list.TodoItem{}}, nil)
+			e, _, _, mockGetUseCase, _ := setup()
+			mockGetUseCase.On("Execute", mock.Anything).Return(&list.Result{Todos: []*list.Todo{}}, nil)
 			req := httptest.NewRequest(http.MethodGet, "/todos", nil)
 			rec := httptest.NewRecorder()
 			e.ServeHTTP(rec, req)
@@ -112,10 +125,10 @@ func TestTodoHandler(t *testing.T) {
 		})
 
 		t.Run("データが返却されるパターン", func(t *testing.T) {
-			e, _, _, mockGetUseCase := setup()
+			e, _, _, mockGetUseCase, _ := setup()
 			id := uuid.New()
 			mockGetUseCase.On("Execute", mock.Anything).Return(&list.Result{
-				Todos: []*list.TodoItem{
+				Todos: []*list.Todo{
 					{
 						ID:          domain.TodoID(id),
 						Title:       "test title",
@@ -133,7 +146,7 @@ func TestTodoHandler(t *testing.T) {
 		})
 
 		t.Run("ユースケースでエラーが発生したパターン", func(t *testing.T) {
-			e, _, _, mockGetUseCase := setup()
+			e, _, _, mockGetUseCase, _ := setup()
 			mockGetUseCase.On("Execute", mock.Anything).Return(nil, fmt.Errorf("usecase error"))
 			req := httptest.NewRequest(http.MethodGet, "/todos", nil)
 			rec := httptest.NewRecorder()
@@ -145,32 +158,56 @@ func TestTodoHandler(t *testing.T) {
 
 	t.Run("GetTodo", func(t *testing.T) {
 		t.Run("正常系", func(t *testing.T) {
-			e, _, _, _ := setup()
-			req := httptest.NewRequest(http.MethodGet, "/todos/1", nil)
+			e, _, _, _, mockGetTodoUseCase := setup()
+			id := uuid.New()
+			todoID, _ := domain.NewTodoIDFromString(id.String())
+			mockGetTodoUseCase.On("Execute", mock.Anything, get.Command{ID: *todoID}).Return(&get.Todo{
+				ID:          *todoID,
+				Title:       "test title",
+				Description: "test description",
+			}, nil)
+
+			req := httptest.NewRequest(http.MethodGet, "/todos/"+id.String(), nil)
 			rec := httptest.NewRecorder()
 			e.ServeHTTP(rec, req)
 
 			require.Equal(t, http.StatusOK, rec.Code)
-			require.Equal(t, "Get todo", rec.Body.String())
+			expectedBody := fmt.Sprintf(`{"id":"%s","title":"test title","description":"test description"}`, id.String())
+			require.JSONEq(t, expectedBody, rec.Body.String())
+			mockGetTodoUseCase.AssertExpectations(t)
 		})
 
-		t.Run("IDが数字じゃない場合", func(t *testing.T) {
-			e, _, _, _ := setup()
-			req := httptest.NewRequest(http.MethodGet, "/todos/a", nil)
+		t.Run("IDがUUIDじゃない場合", func(t *testing.T) {
+			e, _, _, _, _ := setup()
+			req := httptest.NewRequest(http.MethodGet, "/todos/invalid-uuid", nil)
 			rec := httptest.NewRecorder()
-			c := e.NewContext(req, rec)
-			c.SetParamNames("id")
-			c.SetParamValues("a")
 			e.ServeHTTP(rec, req)
 
 			require.Equal(t, http.StatusBadRequest, rec.Code)
+			require.JSONEq(t, `{"message":"Invalid todo ID"}`, rec.Body.String())
+		})
+
+		t.Run("データが存在しない場合", func(t *testing.T) {
+			e, _, _, _, mockGetTodoUseCase := setup()
+			id := uuid.New()
+			todoID, _ := domain.NewTodoIDFromString(id.String())
+			mockGetTodoUseCase.On("Execute", mock.Anything, get.Command{ID: *todoID}).Return(nil, nil)
+
+			req := httptest.NewRequest(http.MethodGet, "/todos/"+id.String(), nil)
+			rec := httptest.NewRecorder()
+			e.ServeHTTP(rec, req)
+
+			require.Equal(t, http.StatusNotFound, rec.Code)
+			require.JSONEq(t, `{"message":"Todo not found"}`, rec.Body.String())
+			mockGetTodoUseCase.AssertExpectations(t)
 		})
 	})
 
 	t.Run("UpdateTodo", func(t *testing.T) {
 		t.Run("正常系", func(t *testing.T) {
-			e, _, _, _ := setup()
-			req := httptest.NewRequest(http.MethodPut, "/todos/1", strings.NewReader(`{"title": "test", "description": "description"}`))
+			e, _, _, _, _ := setup()
+			id := uuid.New().String()
+			req := httptest.NewRequest(http.MethodPut, "/todos/"+id, strings.NewReader(`{"title": "test", "description": "description"}`))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			e.ServeHTTP(rec, req)
@@ -179,27 +216,23 @@ func TestTodoHandler(t *testing.T) {
 			require.Equal(t, "", rec.Body.String())
 		})
 
-		t.Run("IDが数字じゃない場合", func(t *testing.T) {
-			e, _, _, _ := setup()
-			req := httptest.NewRequest(http.MethodPut, "/todos/a", strings.NewReader(`{"title": "test", "description": "description"}`))
+		t.Run("IDがUUIDじゃない場合", func(t *testing.T) {
+			e, _, _, _, _ := setup()
+			req := httptest.NewRequest(http.MethodPut, "/todos/invalid-uuid", strings.NewReader(`{"title": "test", "description": "description"}`))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
-			c := e.NewContext(req, rec)
-			c.SetParamNames("id")
-			c.SetParamValues("a")
 			e.ServeHTTP(rec, req)
 
 			require.Equal(t, http.StatusBadRequest, rec.Code)
+			require.JSONEq(t, `{"message":"Invalid todo ID"}`, rec.Body.String())
 		})
 
 		t.Run("バリデーションエラー", func(t *testing.T) {
-			e, _, _, _ := setup()
-			req := httptest.NewRequest(http.MethodPut, "/todos/a", strings.NewReader(`{}`))
+			e, _, _, _, _ := setup()
+			id := uuid.New().String()
+			req := httptest.NewRequest(http.MethodPut, "/todos/"+id, strings.NewReader(`{}`))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
-			c := e.NewContext(req, rec)
-			c.SetParamNames("id")
-			c.SetParamValues("a")
 			e.ServeHTTP(rec, req)
 
 			require.Equal(t, http.StatusBadRequest, rec.Code)
@@ -208,8 +241,9 @@ func TestTodoHandler(t *testing.T) {
 
 	t.Run("DeleteTodo", func(t *testing.T) {
 		t.Run("正常系", func(t *testing.T) {
-			e, _, _, _ := setup()
-			req := httptest.NewRequest(http.MethodDelete, "/todos/1", nil)
+			e, _, _, _, _ := setup()
+			id := uuid.New().String()
+			req := httptest.NewRequest(http.MethodDelete, "/todos/"+id, nil)
 			rec := httptest.NewRecorder()
 			e.ServeHTTP(rec, req)
 
@@ -217,16 +251,14 @@ func TestTodoHandler(t *testing.T) {
 			require.Equal(t, "", rec.Body.String())
 		})
 
-		t.Run("IDが数字じゃない場合", func(t *testing.T) {
-			e, _, _, _ := setup()
-			req := httptest.NewRequest(http.MethodDelete, "/todos/a", strings.NewReader(`{}`))
+		t.Run("IDがUUIDじゃない場合", func(t *testing.T) {
+			e, _, _, _, _ := setup()
+			req := httptest.NewRequest(http.MethodDelete, "/todos/invalid-uuid", nil)
 			rec := httptest.NewRecorder()
-			c := e.NewContext(req, rec)
-			c.SetParamNames("id")
-			c.SetParamValues("a")
 			e.ServeHTTP(rec, req)
 
 			require.Equal(t, http.StatusBadRequest, rec.Code)
+			require.JSONEq(t, `{"message":"Invalid todo ID"}`, rec.Body.String())
 		})
 	})
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"echo-sample2/internal/todo/application/usecase/create"
+	"echo-sample2/internal/todo/application/usecase/get"
 	"echo-sample2/internal/todo/application/usecase/list"
 	"echo-sample2/internal/todo/handler"
 	dbinfra "echo-sample2/internal/todo/infrastructure/db"
@@ -66,7 +67,8 @@ func main() {
 	todoRepository := repository.NewTodoRepository(db.DB)
 	createTodoUseCase := create.New(txManager)
 	getTodosUsecase := list.New(todoRepository)
-	todoHandler := handler.NewTodoHandler(createTodoUseCase, getTodosUsecase)
+	getTodoUsecase := get.New(todoRepository)
+	todoHandler := handler.NewTodoHandler(createTodoUseCase, getTodosUsecase, getTodoUsecase)
 	todoHandler.RegisterTodoRoutes(e)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)

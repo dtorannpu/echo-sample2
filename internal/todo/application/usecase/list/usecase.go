@@ -14,18 +14,13 @@ type UseCase struct {
 }
 
 type Todo struct {
-	ID   int64
-	Name string
-}
-
-type TodoItem struct {
 	ID          domain.TodoID
 	Title       string
 	Description string
 }
 
 type Result struct {
-	Todos []*TodoItem
+	Todos []*Todo
 }
 
 func New(repo TodoRepository) *UseCase {
@@ -38,10 +33,10 @@ func (u *UseCase) Execute(ctx context.Context) (*Result, error) {
 		return nil, err
 	}
 
-	res := make([]*TodoItem, len(todos))
+	res := make([]*Todo, len(todos))
 
 	for i, todo := range todos {
-		res[i] = &TodoItem{
+		res[i] = &Todo{
 			ID:          todo.ID,
 			Title:       todo.Title,
 			Description: todo.Description,

@@ -2,6 +2,7 @@ package domain
 
 import (
 	"database/sql/driver"
+	"echo-sample2/internal/todo/domain/errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -11,6 +12,19 @@ type TodoID uuid.UUID
 
 func NewTodoID() TodoID {
 	return TodoID(uuid.New())
+}
+
+func NewTodoIDFromString(id string) (*TodoID, error) {
+	parsed, err := uuid.Parse(id)
+	if err != nil {
+		return nil, &errors.ErrInvalidTodoID{
+			Value: id,
+			Err:   err,
+		}
+	}
+
+	todoID := TodoID(parsed)
+	return &todoID, nil
 }
 
 func (id TodoID) String() string {

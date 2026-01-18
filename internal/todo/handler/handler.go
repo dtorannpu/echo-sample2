@@ -3,23 +3,32 @@ package handler
 import (
 	"context"
 	"echo-sample2/internal/todo/application/usecase/create"
+	"echo-sample2/internal/todo/application/usecase/get"
 	"echo-sample2/internal/todo/application/usecase/list"
+	"echo-sample2/internal/todo/domain"
+	domainError "echo-sample2/internal/todo/domain/errors"
+	"errors"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
 )
 
-type CreateTodoUseCase interface {
+type CreateUseCase interface {
 	Execute(ctx context.Context, command create.Command) error
 }
 
-type GetTodosUseCase interface {
+type ListUseCase interface {
 	Execute(ctx context.Context) (*list.Result, error)
 }
 
+type GetUseCase interface {
+	Execute(ctx context.Context, command get.Command) (*get.Todo, error)
+}
+
 type TodoHandler struct {
-	createTodoUseCase CreateTodoUseCase
-	getTodosUseCase   GetTodosUseCase
+	createUseCase CreateUseCase
+	listUseCase   ListUseCase
+	getUseCase    GetUseCase
 }
 
 type createTodoRequest struct {
@@ -38,21 +47,25 @@ type getTodosResponse struct {
 }
 
 type getTodoRequest struct {
-	ID int64 `param:"id" validate:"required"`
+	ID string `param:"id" validate:"required"`
 }
 
 type updateTodoRequest struct {
-	ID          int64  `param:"id" validate:"required"`
+	ID          string `param:"id" validate:"required"`
 	Title       string `json:"title" validate:"required"`
 	Description string `json:"description" validate:"required"`
 }
 
 type deleteTodoRequest struct {
-	ID int64 `param:"id" validate:"required"`
+	ID string `param:"id" validate:"required"`
 }
 
-func NewTodoHandler(createTodoUseCase CreateTodoUseCase, getTodosUseCase GetTodosUseCase) *TodoHandler {
-	return &TodoHandler{createTodoUseCase: createTodoUseCase, getTodosUseCase: getTodosUseCase}
+func NewTodoHandler(createTodoUseCase CreateUseCase, listUseCase ListUseCase, getUseCase GetUseCase) *TodoHandler {
+	return &TodoHandler{
+		createUseCase: createTodoUseCase,
+		listUseCase:   listUseCase,
+		getUseCase:    getUseCase,
+	}
 }
 
 func (h *TodoHandler) RegisterTodoRoutes(e *echo.Echo) {
@@ -80,7 +93,7 @@ func (h *TodoHandler) createTodo(c echo.Context) error {
 		Description: req.Description,
 	}
 
-	err := h.createTodoUseCase.Execute(c.Request().Context(), command)
+	err := h.createUseCase.Execute(c.Request().Context(), command)
 	if err != nil {
 		return err
 	}
@@ -89,7 +102,7 @@ func (h *TodoHandler) createTodo(c echo.Context) error {
 }
 
 func (h *TodoHandler) getTodos(c echo.Context) error {
-	todoRes, err := h.getTodosUseCase.Execute(c.Request().Context())
+	todoRes, err := h.listUseCase.Execute(c.Request().Context())
 	if err != nil {
 		return err
 	}
@@ -114,7 +127,27 @@ func (h *TodoHandler) getTodo(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	return c.String(http.StatusOK, "Get todo")
+	id, err := domain.NewTodoIDFromString(req.ID)
+	var invalidErr *domainError.ErrInvalidTodoID
+	if errors.As(err, &invalidErr) {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid todo ID")
+	}
+	if err != nil {
+		return err
+	}
+
+	res, err := h.getUseCase.Execute(c.Request().Context(), get.Command{ID: *id})
+	if err != nil {
+		return err
+	}
+	if res == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "Todo not found")
+	}
+	return c.JSON(http.StatusOK, &todoResponse{
+		ID:          res.ID.String(),
+		Title:       res.Title,
+		Description: res.Description,
+	})
 }
 
 func (h *TodoHandler) updateTodo(c echo.Context) error {
@@ -128,6 +161,15 @@ func (h *TodoHandler) updateTodo(c echo.Context) error {
 		return err
 	}
 
+	_, err := domain.NewTodoIDFromString(req.ID)
+	var invalidErr *domainError.ErrInvalidTodoID
+	if errors.As(err, &invalidErr) {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid todo ID")
+	}
+	if err != nil {
+		return err
+	}
+
 	return c.NoContent(http.StatusNoContent)
 }
 
@@ -136,6 +178,15 @@ func (h *TodoHandler) deleteTodo(c echo.Context) error {
 
 	if err := c.Bind(req); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+
+	_, err := domain.NewTodoIDFromString(req.ID)
+	var invalidErr *domainError.ErrInvalidTodoID
+	if errors.As(err, &invalidErr) {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid todo ID")
+	}
+	if err != nil {
+		return err
 	}
 
 	return c.NoContent(http.StatusNoContent)

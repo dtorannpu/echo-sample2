@@ -41,6 +41,25 @@ func TestTodoRepository_Save(t *testing.T) {
 		assert.Equal(t, todo.Title, entity.Title)
 		assert.Equal(t, todo.Description, entity.Description)
 	})
+
+	t.Run("データベースエラーが発生した場合、エラーを返すこと", func(t *testing.T) {
+		// テーブルをドロップしてエラーを発生させる
+		err := db.Migrator().DropTable(&infrastructure.TodoEntity{})
+		require.NoError(t, err)
+
+		todo := &domain.Todo{
+			ID:          domain.NewTodoID(),
+			Title:       "Test Title",
+			Description: "Test Description",
+		}
+
+		err = repo.Save(ctx, todo)
+		assert.Error(t, err)
+
+		// 次のテストのためにテーブルを再作成
+		err = db.AutoMigrate(&infrastructure.TodoEntity{})
+		require.NoError(t, err)
+	})
 }
 
 func TestTodoRepository_FindAll(t *testing.T) {
@@ -92,5 +111,15 @@ func TestTodoRepository_FindAll(t *testing.T) {
 		todos, err := repo.FindAll(ctx)
 		assert.NoError(t, err)
 		assert.Len(t, todos, 0)
+	})
+
+	t.Run("データベースエラーが発生した場合、エラーを返すこと", func(t *testing.T) {
+		// テーブルをドロップしてエラーを発生させる
+		err := db.Migrator().DropTable(&infrastructure.TodoEntity{})
+		require.NoError(t, err)
+
+		todos, err := repo.FindAll(ctx)
+		assert.Error(t, err)
+		assert.Nil(t, todos)
 	})
 }

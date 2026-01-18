@@ -1,6 +1,8 @@
 package errors
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type ErrInvalidTodoID struct {
 	Value string
@@ -13,4 +15,12 @@ func (e *ErrInvalidTodoID) Error() string {
 
 func (e *ErrInvalidTodoID) Unwrap() error {
 	return e.Err
+}
+
+type ErrorTodoNotFound struct {
+	ID string
+}
+
+func (e *ErrorTodoNotFound) Error() string {
+	return fmt.Sprintf("not found todo id %s", e.ID)
 }

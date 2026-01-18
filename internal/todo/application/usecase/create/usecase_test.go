@@ -20,7 +20,6 @@ func (m *MockTransactionManager) Do(ctx context.Context, fn func(tx repository.T
 	if args.Get(0) != nil {
 		return args.Error(0)
 	}
-	// fnを呼び出して、モックのTransactionを渡す
 	return fn(args.Get(1).(repository.Transaction))
 }
 
@@ -42,6 +41,11 @@ func (m *MockTodoRepository) Save(ctx context.Context, todo *domain.Todo) error 
 	return args.Error(0)
 }
 
+func (m *MockTodoRepository) Update(ctx context.Context, todo *domain.Todo) error {
+	args := m.Called(ctx, todo)
+	return args.Error(0)
+}
+
 func TestCreateTodoUseCase_Execute(t *testing.T) {
 	t.Run("正常にTodoが作成されること", func(t *testing.T) {
 		// 準備
@@ -58,7 +62,10 @@ func TestCreateTodoUseCase_Execute(t *testing.T) {
 		}
 
 		// モックの挙動を設定
-		mockTM.On("Do", ctx, mock.Anything).Return(nil, mockTX)
+		mockTM.On("Do", ctx, mock.Anything).Return(nil, mockTX).Run(func(args mock.Arguments) {
+			fn := args.Get(1).(func(repository.Transaction) error)
+			_ = fn(mockTX)
+		})
 		mockTX.On("TodoRepo").Return(mockRepo)
 		mockRepo.On("Save", ctx, mock.MatchedBy(func(todo *domain.Todo) bool {
 			return todo.Title == command.Title && todo.Description == command.Description && todo.ID != domain.TodoID{}
@@ -91,7 +98,10 @@ func TestCreateTodoUseCase_Execute(t *testing.T) {
 		expectedErr := context.DeadlineExceeded
 
 		// モックの挙動を設定
-		mockTM.On("Do", ctx, mock.Anything).Return(nil, mockTX)
+		mockTM.On("Do", ctx, mock.Anything).Return(nil, mockTX).Run(func(args mock.Arguments) {
+			fn := args.Get(1).(func(repository.Transaction) error)
+			_ = fn(mockTX)
+		})
 		mockTX.On("TodoRepo").Return(mockRepo)
 		mockRepo.On("Save", ctx, mock.Anything).Return(expectedErr)
 

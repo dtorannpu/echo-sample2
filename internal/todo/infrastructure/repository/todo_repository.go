@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"echo-sample2/internal/todo/domain"
+	domainErr "echo-sample2/internal/todo/domain/errors"
 	"echo-sample2/internal/todo/infrastructure"
 	"errors"
 
@@ -21,6 +22,17 @@ func (r *TodoRepository) Save(ctx context.Context, todo *domain.Todo) error {
 	entity := toEntity(todo)
 
 	return gorm.G[infrastructure.TodoEntity](r.db).Create(ctx, entity)
+}
+
+func (r *TodoRepository) Update(ctx context.Context, todo *domain.Todo) error {
+	count, err := gorm.G[infrastructure.TodoEntity](r.db).Where(&infrastructure.TodoEntity{ID: todo.ID}).Updates(ctx, infrastructure.TodoEntity{Title: todo.Title, Description: todo.Description})
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return &domainErr.ErrorTodoNotFound{ID: todo.ID.String()}
+	}
+	return nil
 }
 
 func (r *TodoRepository) FindAll(ctx context.Context) ([]*domain.Todo, error) {

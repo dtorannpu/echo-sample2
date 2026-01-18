@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"echo-sample2/internal/todo/domain"
+	domainErr "echo-sample2/internal/todo/domain/errors"
 	"echo-sample2/internal/todo/infrastructure"
 	"testing"
 
@@ -165,5 +166,71 @@ func TestTodoRepository_FindById(t *testing.T) {
 		found, err := repo.FindById(ctx, domain.NewTodoID())
 		assert.Error(t, err)
 		assert.Nil(t, found)
+	})
+}
+
+func TestTodoRepository_Update(t *testing.T) {
+	// Setup
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+
+	err = db.AutoMigrate(&infrastructure.TodoEntity{})
+	require.NoError(t, err)
+
+	repo := NewTodoRepository(db)
+	ctx := context.Background()
+
+	t.Run("正常に更新できること", func(t *testing.T) {
+		id := domain.NewTodoID()
+		initialTodo := &infrastructure.TodoEntity{
+			ID:          id,
+			Title:       "Initial Title",
+			Description: "Initial Description",
+		}
+		err := db.Create(initialTodo).Error
+		require.NoError(t, err)
+
+		updatedTodo := &domain.Todo{
+			ID:          id,
+			Title:       "Updated Title",
+			Description: "Updated Description",
+		}
+
+		err = repo.Update(ctx, updatedTodo)
+		assert.NoError(t, err)
+
+		// 検証
+		var entity infrastructure.TodoEntity
+		err = db.First(&entity, "id = ?", id).Error
+		assert.NoError(t, err)
+		assert.Equal(t, updatedTodo.Title, entity.Title)
+		assert.Equal(t, updatedTodo.Description, entity.Description)
+	})
+
+	t.Run("存在しないIDの場合はErrorTodoNotFoundを返すこと", func(t *testing.T) {
+		todo := &domain.Todo{
+			ID:          domain.NewTodoID(),
+			Title:       "Title",
+			Description: "Description",
+		}
+
+		err := repo.Update(ctx, todo)
+		assert.Error(t, err)
+		assert.IsType(t, &domainErr.ErrorTodoNotFound{}, err)
+	})
+
+	t.Run("データベースエラーが発生した場合、エラーを返すこと", func(t *testing.T) {
+		// テーブルをドロップしてエラーを発生させる
+		err := db.Migrator().DropTable(&infrastructure.TodoEntity{})
+		require.NoError(t, err)
+
+		todo := &domain.Todo{
+			ID:          domain.NewTodoID(),
+			Title:       "Title",
+			Description: "Description",
+		}
+
+		err = repo.Update(ctx, todo)
+		assert.Error(t, err)
 	})
 }

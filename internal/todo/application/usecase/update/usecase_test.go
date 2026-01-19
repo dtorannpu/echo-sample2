@@ -46,6 +46,11 @@ func (m *MockTodoRepository) Update(ctx context.Context, todo *domain.Todo) erro
 	return args.Error(0)
 }
 
+func (m *MockTodoRepository) Delete(ctx context.Context, id domain.TodoID) error {
+	args := m.Called(ctx, id)
+	return args.Error(0)
+}
+
 func TestUseCase_Execute(t *testing.T) {
 	t.Run("正常にTodoが更新されること", func(t *testing.T) {
 		// 準備

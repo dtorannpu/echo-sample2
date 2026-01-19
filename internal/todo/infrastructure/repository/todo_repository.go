@@ -71,6 +71,17 @@ func (r *TodoRepository) FindById(ctx context.Context, id domain.TodoID) (*domai
 	}, nil
 }
 
+func (r *TodoRepository) Delete(ctx context.Context, id domain.TodoID) error {
+	count, err := gorm.G[infrastructure.TodoEntity](r.db).Where(&infrastructure.TodoEntity{ID: id}).Delete(ctx)
+	if err != nil {
+		return err
+	}
+	if count == 0 {
+		return &domainErr.ErrorTodoNotFound{ID: id.String()}
+	}
+	return nil
+}
+
 func toEntity(todo *domain.Todo) *infrastructure.TodoEntity {
 	return &infrastructure.TodoEntity{
 		ID:          todo.ID,

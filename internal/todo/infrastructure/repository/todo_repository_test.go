@@ -234,3 +234,54 @@ func TestTodoRepository_Update(t *testing.T) {
 		assert.Error(t, err)
 	})
 }
+
+func TestTodoRepository_Delete(t *testing.T) {
+	// Setup
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	require.NoError(t, err)
+
+	err = db.AutoMigrate(&infrastructure.TodoEntity{})
+	require.NoError(t, err)
+
+	repo := NewTodoRepository(db)
+	ctx := context.Background()
+
+	t.Run("正常に削除できること", func(t *testing.T) {
+		id := domain.NewTodoID()
+		todo := &infrastructure.TodoEntity{
+			ID:          id,
+			Title:       "Test Title",
+			Description: "Test Description",
+		}
+		err := db.Create(todo).Error
+		require.NoError(t, err)
+
+		err = repo.Delete(ctx, id)
+		assert.NoError(t, err)
+
+		// 検証: 削除されていること
+		var entity infrastructure.TodoEntity
+		err = db.First(&entity, "id = ?", id).Error
+		assert.Error(t, err)
+		assert.ErrorIs(t, err, gorm.ErrRecordNotFound)
+	})
+
+	t.Run("存在しないIDの場合はErrorTodoNotFoundを返すこと", func(t *testing.T) {
+		err := repo.Delete(ctx, domain.NewTodoID())
+		assert.Error(t, err)
+		assert.IsType(t, &domainErr.ErrorTodoNotFound{}, err)
+	})
+
+	t.Run("データベースエラーが発生した場合、エラーを返すこと", func(t *testing.T) {
+		// テーブルをドロップしてエラーを発生させる
+		err := db.Migrator().DropTable(&infrastructure.TodoEntity{})
+		require.NoError(t, err)
+
+		err = repo.Delete(ctx, domain.NewTodoID())
+		assert.Error(t, err)
+
+		// 次のテストのために（もしあれば）テーブルを再作成
+		err = db.AutoMigrate(&infrastructure.TodoEntity{})
+		require.NoError(t, err)
+	})
+}

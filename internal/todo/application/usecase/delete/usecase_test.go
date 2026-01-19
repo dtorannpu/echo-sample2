@@ -1,4 +1,4 @@
-package create
+package delete
 
 import (
 	"context"
@@ -51,8 +51,8 @@ func (m *MockTodoRepository) Delete(ctx context.Context, id domain.TodoID) error
 	return args.Error(0)
 }
 
-func TestCreateTodoUseCase_Execute(t *testing.T) {
-	t.Run("正常にTodoが作成されること", func(t *testing.T) {
+func TestUseCase_Execute(t *testing.T) {
+	t.Run("正常にTodoが削除されること", func(t *testing.T) {
 		// 準備
 		mockTM := new(MockTransactionManager)
 		mockTX := new(MockTransaction)
@@ -61,9 +61,11 @@ func TestCreateTodoUseCase_Execute(t *testing.T) {
 		uc := New(mockTM)
 
 		ctx := context.Background()
+		todoIDPtr, err := domain.NewTodoIDFromString("550e8400-e29b-41d4-a716-446655440000")
+		require.NoError(t, err)
+		todoID := *todoIDPtr
 		command := Command{
-			Title:       "テストタイトル",
-			Description: "テスト説明",
+			ID: todoID,
 		}
 
 		// モックの挙動を設定
@@ -72,12 +74,10 @@ func TestCreateTodoUseCase_Execute(t *testing.T) {
 			_ = fn(mockTX)
 		})
 		mockTX.On("TodoRepo").Return(mockRepo)
-		mockRepo.On("Save", ctx, mock.MatchedBy(func(todo *domain.Todo) bool {
-			return todo.Title == command.Title && todo.Description == command.Description && todo.ID != domain.TodoID{}
-		})).Return(nil)
+		mockRepo.On("Delete", ctx, todoID).Return(nil)
 
 		// 実行
-		err := uc.Execute(ctx, command)
+		err = uc.Execute(ctx, command)
 
 		// 検証
 		require.NoError(t, err)
@@ -86,7 +86,7 @@ func TestCreateTodoUseCase_Execute(t *testing.T) {
 		mockRepo.AssertExpectations(t)
 	})
 
-	t.Run("リポジトリの保存でエラーが発生した場合、エラーを返すこと", func(t *testing.T) {
+	t.Run("リポジトリの削除でエラーが発生した場合、エラーを返すこと", func(t *testing.T) {
 		// 準備
 		mockTM := new(MockTransactionManager)
 		mockTX := new(MockTransaction)
@@ -95,9 +95,11 @@ func TestCreateTodoUseCase_Execute(t *testing.T) {
 		uc := New(mockTM)
 
 		ctx := context.Background()
+		todoIDPtr, err := domain.NewTodoIDFromString("550e8400-e29b-41d4-a716-446655440000")
+		require.NoError(t, err)
+		todoID := *todoIDPtr
 		command := Command{
-			Title:       "テストタイトル",
-			Description: "テスト説明",
+			ID: todoID,
 		}
 
 		expectedErr := context.DeadlineExceeded
@@ -108,10 +110,10 @@ func TestCreateTodoUseCase_Execute(t *testing.T) {
 			_ = fn(mockTX)
 		})
 		mockTX.On("TodoRepo").Return(mockRepo)
-		mockRepo.On("Save", ctx, mock.Anything).Return(expectedErr)
+		mockRepo.On("Delete", ctx, todoID).Return(expectedErr)
 
 		// 実行
-		err := uc.Execute(ctx, command)
+		err = uc.Execute(ctx, command)
 
 		// 検証
 		require.ErrorIs(t, err, expectedErr)

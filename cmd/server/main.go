@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"echo-sample2/internal/todo/application/usecase/create"
+	"echo-sample2/internal/todo/application/usecase/delete"
 	"echo-sample2/internal/todo/application/usecase/get"
 	"echo-sample2/internal/todo/application/usecase/list"
 	"echo-sample2/internal/todo/application/usecase/update"
@@ -70,7 +71,8 @@ func main() {
 	getTodosUseCase := list.New(todoRepository)
 	getTodoUseCase := get.New(todoRepository)
 	updateTodoUseCase := update.New(txManager)
-	todoHandler := handler.NewTodoHandler(createTodoUseCase, getTodosUseCase, getTodoUseCase, updateTodoUseCase)
+	deleteUseCase := delete.New(txManager)
+	todoHandler := handler.NewTodoHandler(createTodoUseCase, getTodosUseCase, getTodoUseCase, updateTodoUseCase, deleteUseCase)
 	todoHandler.RegisterTodoRoutes(e)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)

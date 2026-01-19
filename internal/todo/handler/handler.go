@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"echo-sample2/internal/todo/application/usecase/create"
+	"echo-sample2/internal/todo/application/usecase/delete"
 	"echo-sample2/internal/todo/application/usecase/get"
 	"echo-sample2/internal/todo/application/usecase/list"
 	"echo-sample2/internal/todo/application/usecase/update"
@@ -30,11 +31,16 @@ type UpdateUseCase interface {
 	Execute(ctx context.Context, command update.Command) error
 }
 
+type DeleteUseCase interface {
+	Execute(ctx context.Context, command delete.Command) error
+}
+
 type TodoHandler struct {
 	createUseCase CreateUseCase
 	listUseCase   ListUseCase
 	getUseCase    GetUseCase
 	updateUseCase UpdateUseCase
+	deleteUseCase DeleteUseCase
 }
 
 type createTodoRequest struct {
@@ -66,12 +72,13 @@ type deleteTodoRequest struct {
 	ID string `param:"id" validate:"required"`
 }
 
-func NewTodoHandler(createTodoUseCase CreateUseCase, listUseCase ListUseCase, getUseCase GetUseCase, updateUseCase UpdateUseCase) *TodoHandler {
+func NewTodoHandler(createTodoUseCase CreateUseCase, listUseCase ListUseCase, getUseCase GetUseCase, updateUseCase UpdateUseCase, deleteUseCase DeleteUseCase) *TodoHandler {
 	return &TodoHandler{
 		createUseCase: createTodoUseCase,
 		listUseCase:   listUseCase,
 		getUseCase:    getUseCase,
 		updateUseCase: updateUseCase,
+		deleteUseCase: deleteUseCase,
 	}
 }
 
@@ -178,6 +185,10 @@ func (h *TodoHandler) updateTodo(c echo.Context) error {
 	}
 
 	err = h.updateUseCase.Execute(c.Request().Context(), update.Command{ID: *id, Title: req.Title, Description: req.Description})
+	var notFoundErr *domainError.ErrorTodoNotFound
+	if errors.As(err, &notFoundErr) {
+		return echo.NewHTTPError(http.StatusNotFound, "Todo not found")
+	}
 	if err != nil {
 		return err
 	}
@@ -192,10 +203,19 @@ func (h *TodoHandler) deleteTodo(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
 
-	_, err := domain.NewTodoIDFromString(req.ID)
+	id, err := domain.NewTodoIDFromString(req.ID)
 	var invalidErr *domainError.ErrInvalidTodoID
 	if errors.As(err, &invalidErr) {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid todo ID")
+	}
+	if err != nil {
+		return err
+	}
+
+	err = h.deleteUseCase.Execute(c.Request().Context(), delete.Command{ID: *id})
+	var notFoundErr *domainError.ErrorTodoNotFound
+	if errors.As(err, &notFoundErr) {
+		return echo.NewHTTPError(http.StatusNotFound, "Todo not found")
 	}
 	if err != nil {
 		return err

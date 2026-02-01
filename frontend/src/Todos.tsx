@@ -1,10 +1,14 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { getTodos, createTodo } from "@/api";
 
 const Todos = () => {
   const queryClient = useQueryClient();
 
-  const query = useQuery({
+  const { data: todos, isFetching } = useSuspenseQuery({
     queryKey: ["todos"],
     queryFn: getTodos,
   });
@@ -19,8 +23,9 @@ const Todos = () => {
 
   return (
     <div>
+      {isFetching && <div>Updating...</div>}
       <ul>
-        {query.data?.map((todo) => (
+        {todos?.map((todo) => (
           <li key={todo.id}>{todo.title}</li>
         ))}
       </ul>

@@ -1,9 +1,19 @@
 name: Go
-on: [push]
-
+on:
+  push:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yaml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yaml"
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
 
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1

@@ -58,6 +58,7 @@ func main() {
 			return nil
 		},
 	}))
+	e.Use(middleware.CORS())
 
 	e.Validator = &customValidator.CustomValidator{Validator: validator.New()}
 

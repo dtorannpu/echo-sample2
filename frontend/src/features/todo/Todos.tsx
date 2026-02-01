@@ -4,18 +4,25 @@ import {
   useSuspenseQuery,
 } from "@tanstack/react-query";
 import { deleteTodo, getTodos } from "@/features/todo/api";
+import type { Todo } from "@/features/todo/types.ts";
 
-const Todos = () => {
+type Props = {
+  onUpdate: (data: Todo) => void;
+  onDelete: () => void;
+};
+
+const Todos = ({ onUpdate, onDelete }: Props) => {
   const queryClient = useQueryClient();
 
   const deleteMutation = useMutation({
     mutationFn: deleteTodo,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["todo"] });
+      onDelete();
     },
   });
 
-  const { data: todos, isFetching } = useSuspenseQuery({
+  const { data: todoList, isFetching } = useSuspenseQuery({
     queryKey: ["todo"],
     queryFn: getTodos,
   });
@@ -35,12 +42,13 @@ const Todos = () => {
           </tr>
         </thead>
         <tbody>
-          {todos?.map((todo) => (
+          {todoList.todos?.map((todo) => (
             <tr key={todo.id}>
               <td>{todo.id}</td>
               <td>{todo.title}</td>
               <td>{todo.description}</td>
               <td>
+                <button onClick={() => onUpdate(todo)}>更新</button>
                 <button onClick={() => deleteMutation.mutate(todo.id)}>
                   削除
                 </button>

@@ -1,5 +1,9 @@
 import type { UUID } from "@/types.ts";
 
+export type TodoList = {
+  todos: Todo[];
+};
+
 export type Todo = {
   id: UUID;
   title: string;
@@ -9,4 +13,9 @@ export type Todo = {
 export type CreateTodoRequest = {
   title: string;
   description: string;
+};
+
+export type UpdateParam = {
+  id: UUID;
+  request: CreateTodoRequest;
 };

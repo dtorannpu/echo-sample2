@@ -1,5 +1,7 @@
+import type { UUID } from "@/types.ts";
+
 export type Todo = {
-  id: string;
+  id: UUID;
   title: string;
   description: string;
 };

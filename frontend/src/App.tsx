@@ -1,5 +1,4 @@
 import "@/App.css";
-import Todos from "@/Todos.tsx";
 import {
   QueryClient,
   QueryClientProvider,
@@ -8,6 +7,7 @@ import {
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Suspense } from "react";
 import { ErrorBoundary } from "react-error-boundary";
+import TodoPage from "@/features/todo/TodoPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -26,7 +26,7 @@ const App = () => {
     >
       <QueryClientProvider client={queryClient}>
         <Suspense fallback="Loading...">
-          <Todos />
+          <TodoPage />
         </Suspense>
 
         <ReactQueryDevtools initialIsOpen={false} />

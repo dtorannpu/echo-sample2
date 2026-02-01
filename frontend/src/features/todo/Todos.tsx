@@ -1,15 +1,30 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
-import { getTodos } from "@/api";
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
+import { deleteTodo, getTodos } from "@/features/todo/api";
 
 const Todos = () => {
+  const queryClient = useQueryClient();
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteTodo,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["todo"] });
+    },
+  });
+
   const { data: todos, isFetching } = useSuspenseQuery({
     queryKey: ["todo"],
     queryFn: getTodos,
   });
 
+  if (deleteMutation.isPending) return <div>Deleting...</div>;
+  if (isFetching) return <div>Updating...</div>;
+
   return (
     <div>
-      {isFetching && <div>Updating...</div>}
       <table>
         <thead>
           <tr>
@@ -25,6 +40,11 @@ const Todos = () => {
               <td>{todo.id}</td>
               <td>{todo.title}</td>
               <td>{todo.description}</td>
+              <td>
+                <button onClick={() => deleteMutation.mutate(todo.id)}>
+                  削除
+                </button>
+              </td>
             </tr>
           ))}
         </tbody>

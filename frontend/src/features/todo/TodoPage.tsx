@@ -1,5 +1,5 @@
 import TodoForm from "@/features/todo/TodoForm.tsx";
-import Todos from "@/features/todo/Todos.tsx";
+import Todos from "@/features/todo/api.ts";
 
 const TodoPage = () => {
   return (

@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { type FormValues, createTodoSchema } from "@/features/todo/schema.ts";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { createTodo } from "@/api";
+import { createTodo } from "@/features/todo/api";
 
 const TodoForm = () => {
   const queryClient = useQueryClient();

@@ -1,1 +1,7 @@
-# Vite React template
+#  
+
+## 環境変数
+
+| キー                | 値                     |
+|-------------------|-----------------------|
+| VITE_API_BASE_URL | http://localhost:1323 |

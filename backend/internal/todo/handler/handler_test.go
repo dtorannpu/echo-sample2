@@ -17,7 +17,6 @@ import (
 	"testing"
 
 	"github.com/go-playground/validator"
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -149,7 +148,8 @@ func TestTodoHandler(t *testing.T) {
 
 		t.Run("データが返却されるパターン", func(t *testing.T) {
 			e, _, _, mockGetUseCase, _, _, _ := setup()
-			id := uuid.New()
+			id, err := domain.NewTodoID()
+			require.NoError(t, err)
 			mockGetUseCase.On("Execute", mock.Anything).Return(&list.Result{
 				Todos: []*list.Todo{
 					{
@@ -182,7 +182,8 @@ func TestTodoHandler(t *testing.T) {
 	t.Run("GetTodo", func(t *testing.T) {
 		t.Run("正常系", func(t *testing.T) {
 			e, _, _, _, mockGetTodoUseCase, _, _ := setup()
-			id := uuid.New()
+			id, err := domain.NewTodoID()
+			require.NoError(t, err)
 			todoID, _ := domain.NewTodoIDFromString(id.String())
 			mockGetTodoUseCase.On("Execute", mock.Anything, get.Command{ID: *todoID}).Return(&get.Todo{
 				ID:          *todoID,
@@ -212,7 +213,8 @@ func TestTodoHandler(t *testing.T) {
 
 		t.Run("データが存在しない場合", func(t *testing.T) {
 			e, _, _, _, mockGetTodoUseCase, _, _ := setup()
-			id := uuid.New()
+			id, err := domain.NewTodoID()
+			require.NoError(t, err)
 			todoID, _ := domain.NewTodoIDFromString(id.String())
 			mockGetTodoUseCase.On("Execute", mock.Anything, get.Command{ID: *todoID}).Return(nil, nil)
 
@@ -229,7 +231,8 @@ func TestTodoHandler(t *testing.T) {
 	t.Run("UpdateTodo", func(t *testing.T) {
 		t.Run("正常系", func(t *testing.T) {
 			e, _, _, _, _, mockUpdateUseCase, _ := setup()
-			id := uuid.New()
+			id, err := domain.NewTodoID()
+			require.NoError(t, err)
 			todoID, _ := domain.NewTodoIDFromString(id.String())
 			command := update.Command{
 				ID:          *todoID,
@@ -261,8 +264,9 @@ func TestTodoHandler(t *testing.T) {
 
 		t.Run("バリデーションエラー", func(t *testing.T) {
 			e, _, _, _, _, _, _ := setup()
-			id := uuid.New().String()
-			req := httptest.NewRequest(http.MethodPut, "/todos/"+id, strings.NewReader(`{}`))
+			id, err := domain.NewTodoID()
+			require.NoError(t, err)
+			req := httptest.NewRequest(http.MethodPut, "/todos/"+id.String(), strings.NewReader(`{}`))
 			req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
 			rec := httptest.NewRecorder()
 			e.ServeHTTP(rec, req)
@@ -272,7 +276,8 @@ func TestTodoHandler(t *testing.T) {
 
 		t.Run("ユースケースでエラーが発生したパターン", func(t *testing.T) {
 			e, _, _, _, _, mockUpdateUseCase, _ := setup()
-			id := uuid.New()
+			id, err := domain.NewTodoID()
+			require.NoError(t, err)
 			todoID, _ := domain.NewTodoIDFromString(id.String())
 			command := update.Command{
 				ID:          *todoID,
@@ -292,7 +297,8 @@ func TestTodoHandler(t *testing.T) {
 
 		t.Run("データが存在しない場合", func(t *testing.T) {
 			e, _, _, _, _, mockUpdateUseCase, _ := setup()
-			id := uuid.New()
+			id, err := domain.NewTodoID()
+			require.NoError(t, err)
 			todoID, _ := domain.NewTodoIDFromString(id.String())
 			command := update.Command{
 				ID:          *todoID,
@@ -315,7 +321,8 @@ func TestTodoHandler(t *testing.T) {
 	t.Run("DeleteTodo", func(t *testing.T) {
 		t.Run("正常系", func(t *testing.T) {
 			e, _, _, _, _, _, mockDeleteUseCase := setup()
-			id := uuid.New()
+			id, err := domain.NewTodoID()
+			require.NoError(t, err)
 			todoID, _ := domain.NewTodoIDFromString(id.String())
 			command := delete.Command{
 				ID: *todoID,
@@ -343,7 +350,8 @@ func TestTodoHandler(t *testing.T) {
 
 		t.Run("ユースケースでエラーが発生したパターン", func(t *testing.T) {
 			e, _, _, _, _, _, mockDeleteUseCase := setup()
-			id := uuid.New()
+			id, err := domain.NewTodoID()
+			require.NoError(t, err)
 			todoID, _ := domain.NewTodoIDFromString(id.String())
 			command := delete.Command{
 				ID: *todoID,
@@ -360,7 +368,8 @@ func TestTodoHandler(t *testing.T) {
 
 		t.Run("データが存在しない場合", func(t *testing.T) {
 			e, _, _, _, _, _, mockDeleteUseCase := setup()
-			id := uuid.New()
+			id, err := domain.NewTodoID()
+			require.NoError(t, err)
 			todoID, _ := domain.NewTodoIDFromString(id.String())
 			command := delete.Command{
 				ID: *todoID,

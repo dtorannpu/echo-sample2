@@ -10,8 +10,12 @@ import (
 
 type TodoID uuid.UUID
 
-func NewTodoID() TodoID {
-	return TodoID(uuid.New())
+func NewTodoID() (TodoID, error) {
+	id, err := uuid.NewV7()
+	if err != nil {
+		return TodoID{}, err
+	}
+	return TodoID(id), nil
 }
 
 func NewTodoIDFromString(id string) (*TodoID, error) {

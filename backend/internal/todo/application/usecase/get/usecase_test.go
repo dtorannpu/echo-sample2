@@ -28,7 +28,8 @@ func TestUseCase_Execute(t *testing.T) {
 		mockRepo := new(MockTodoRepository)
 		uc := New(mockRepo)
 		ctx := context.Background()
-		id := domain.NewTodoID()
+		id, err := domain.NewTodoID()
+		require.NoError(t, err)
 
 		todo := &domain.Todo{
 			ID:          id,
@@ -56,7 +57,8 @@ func TestUseCase_Execute(t *testing.T) {
 		mockRepo := new(MockTodoRepository)
 		uc := New(mockRepo)
 		ctx := context.Background()
-		id := domain.NewTodoID()
+		id, err := domain.NewTodoID()
+		require.NoError(t, err)
 
 		expectedErr := errors.New("repository error")
 		mockRepo.On("FindById", ctx, id).Return(nil, expectedErr)
@@ -76,7 +78,8 @@ func TestUseCase_Execute(t *testing.T) {
 		mockRepo := new(MockTodoRepository)
 		uc := New(mockRepo)
 		ctx := context.Background()
-		id := domain.NewTodoID()
+		id, err := domain.NewTodoID()
+		require.NoError(t, err)
 
 		mockRepo.On("FindById", ctx, id).Return(nil, nil)
 

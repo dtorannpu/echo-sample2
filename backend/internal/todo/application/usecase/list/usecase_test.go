@@ -29,8 +29,10 @@ func TestGetTodosUseCase_Execute(t *testing.T) {
 		uc := New(mockRepo)
 		ctx := context.Background()
 
-		id1 := domain.NewTodoID()
-		id2 := domain.NewTodoID()
+		id1, err1 := domain.NewTodoID()
+		require.NoError(t, err1)
+		id2, err2 := domain.NewTodoID()
+		require.NoError(t, err2)
 
 		todos := []*domain.Todo{
 			{

@@ -49,3 +49,8 @@ tasks:
   test:
     cmds:
       - go test ./...
+
+  test-cover:
+    cmds:
+      - go test -coverprofile=coverage.out ./...
+      - go tool cover -html=coverage.out

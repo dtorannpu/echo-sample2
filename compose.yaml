@@ -1,0 +1,19 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.5.2
+    tty: true
+    stdin_open: true
+    ports:
+      - "18080:8080"
+    volumes:
+      - ./data/keycloak:/opt/keycloak/data
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: passwd
+    command:
+      - start-dev
+  jaeger:
+    image: cr.jaegertracing.io/jaegertracing/jaeger:2.15.0
+    ports:
+      - "4317:4317"
+      - "16686:16686"

@@ -1,4 +1,3 @@
 import * as z from "zod";
 
-const schema = z.uuid();
-export type UUID = z.infer<typeof schema>;
+export type UUID = z.infer<ReturnType<typeof z.uuidv7>>;

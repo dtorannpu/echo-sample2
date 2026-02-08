@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	authHandler "echo-sample2/internal/auth/handler"
+	"echo-sample2/internal/httpclient"
 	"echo-sample2/internal/todo/application/usecase/create"
 	"echo-sample2/internal/todo/application/usecase/delete"
 	"echo-sample2/internal/todo/application/usecase/get"
@@ -58,9 +60,11 @@ func main() {
 			return nil
 		},
 	}))
-	e.Use(middleware.CORS())
-
 	e.Validator = &customValidator.CustomValidator{Validator: validator.New()}
+
+	authClient := httpclient.NewAuthHttpClient(os.Getenv("API_AUTH_WELL_KNOWN_CONFIG_URL"))
+	ah := authHandler.NewAuthHandler(authClient)
+	ah.RegisterAuthRoutes(e)
 
 	db, err := dbinfra.NewDB()
 	if err != nil {

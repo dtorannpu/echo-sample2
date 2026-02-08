@@ -25,13 +25,16 @@ func TestTodoRepository_Save(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("正常に保存できること", func(t *testing.T) {
+		id, err := domain.NewTodoID()
+		require.NoError(t, err)
+
 		todo := &domain.Todo{
-			ID:          domain.NewTodoID(),
+			ID:          id,
 			Title:       "Test Title",
 			Description: "Test Description",
 		}
 
-		err := repo.Save(ctx, todo)
+		err = repo.Save(ctx, todo)
 		assert.NoError(t, err)
 
 		// 検証
@@ -47,9 +50,11 @@ func TestTodoRepository_Save(t *testing.T) {
 		// テーブルをドロップしてエラーを発生させる
 		err := db.Migrator().DropTable(&infrastructure.TodoEntity{})
 		require.NoError(t, err)
+		id, err := domain.NewTodoID()
+		require.NoError(t, err)
 
 		todo := &domain.Todo{
-			ID:          domain.NewTodoID(),
+			ID:          id,
 			Title:       "Test Title",
 			Description: "Test Description",
 		}
@@ -74,14 +79,19 @@ func TestTodoRepository_FindAll(t *testing.T) {
 	repo := NewTodoRepository(db)
 	ctx := context.Background()
 
+	id1, err1 := domain.NewTodoID()
+	require.NoError(t, err1)
+	id2, err2 := domain.NewTodoID()
+	require.NoError(t, err2)
+
 	t.Run("全てのTodoを取得できること", func(t *testing.T) {
 		todo1 := &infrastructure.TodoEntity{
-			ID:          domain.NewTodoID(),
+			ID:          id1,
 			Title:       "Title 1",
 			Description: "Description 1",
 		}
 		todo2 := &infrastructure.TodoEntity{
-			ID:          domain.NewTodoID(),
+			ID:          id2,
 			Title:       "Title 2",
 			Description: "Description 2",
 		}
@@ -135,13 +145,16 @@ func TestTodoRepository_FindById(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("IDを指定してTodoを取得できること", func(t *testing.T) {
+		id, err := domain.NewTodoID()
+		require.NoError(t, err)
+
 		todo := &infrastructure.TodoEntity{
-			ID:          domain.NewTodoID(),
+			ID:          id,
 			Title:       "Title",
 			Description: "Description",
 		}
 
-		err := db.Create(todo).Error
+		err = db.Create(todo).Error
 		require.NoError(t, err)
 
 		found, err := repo.FindById(ctx, todo.ID)
@@ -153,7 +166,8 @@ func TestTodoRepository_FindById(t *testing.T) {
 	})
 
 	t.Run("存在しないIDの場合はnilを返すこと", func(t *testing.T) {
-		found, err := repo.FindById(ctx, domain.NewTodoID())
+		id, err := domain.NewTodoID()
+		found, err := repo.FindById(ctx, id)
 		assert.NoError(t, err)
 		assert.Nil(t, found)
 	})
@@ -163,7 +177,10 @@ func TestTodoRepository_FindById(t *testing.T) {
 		err := db.Migrator().DropTable(&infrastructure.TodoEntity{})
 		require.NoError(t, err)
 
-		found, err := repo.FindById(ctx, domain.NewTodoID())
+		id, err := domain.NewTodoID()
+		require.NoError(t, err)
+
+		found, err := repo.FindById(ctx, id)
 		assert.Error(t, err)
 		assert.Nil(t, found)
 	})
@@ -181,13 +198,15 @@ func TestTodoRepository_Update(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("正常に更新できること", func(t *testing.T) {
-		id := domain.NewTodoID()
+		id, err := domain.NewTodoID()
+		require.NoError(t, err)
+
 		initialTodo := &infrastructure.TodoEntity{
 			ID:          id,
 			Title:       "Initial Title",
 			Description: "Initial Description",
 		}
-		err := db.Create(initialTodo).Error
+		err = db.Create(initialTodo).Error
 		require.NoError(t, err)
 
 		updatedTodo := &domain.Todo{
@@ -208,13 +227,16 @@ func TestTodoRepository_Update(t *testing.T) {
 	})
 
 	t.Run("存在しないIDの場合はErrorTodoNotFoundを返すこと", func(t *testing.T) {
+		id, err := domain.NewTodoID()
+		require.NoError(t, err)
+
 		todo := &domain.Todo{
-			ID:          domain.NewTodoID(),
+			ID:          id,
 			Title:       "Title",
 			Description: "Description",
 		}
 
-		err := repo.Update(ctx, todo)
+		err = repo.Update(ctx, todo)
 		assert.Error(t, err)
 		assert.IsType(t, &domainErr.ErrorTodoNotFound{}, err)
 	})
@@ -223,9 +245,11 @@ func TestTodoRepository_Update(t *testing.T) {
 		// テーブルをドロップしてエラーを発生させる
 		err := db.Migrator().DropTable(&infrastructure.TodoEntity{})
 		require.NoError(t, err)
+		id, err := domain.NewTodoID()
+		require.NoError(t, err)
 
 		todo := &domain.Todo{
-			ID:          domain.NewTodoID(),
+			ID:          id,
 			Title:       "Title",
 			Description: "Description",
 		}
@@ -247,13 +271,15 @@ func TestTodoRepository_Delete(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("正常に削除できること", func(t *testing.T) {
-		id := domain.NewTodoID()
+		id, err := domain.NewTodoID()
+		require.NoError(t, err)
+
 		todo := &infrastructure.TodoEntity{
 			ID:          id,
 			Title:       "Test Title",
 			Description: "Test Description",
 		}
-		err := db.Create(todo).Error
+		err = db.Create(todo).Error
 		require.NoError(t, err)
 
 		err = repo.Delete(ctx, id)
@@ -267,7 +293,9 @@ func TestTodoRepository_Delete(t *testing.T) {
 	})
 
 	t.Run("存在しないIDの場合はErrorTodoNotFoundを返すこと", func(t *testing.T) {
-		err := repo.Delete(ctx, domain.NewTodoID())
+		id, err := domain.NewTodoID()
+		require.NoError(t, err)
+		err = repo.Delete(ctx, id)
 		assert.Error(t, err)
 		assert.IsType(t, &domainErr.ErrorTodoNotFound{}, err)
 	})
@@ -277,7 +305,10 @@ func TestTodoRepository_Delete(t *testing.T) {
 		err := db.Migrator().DropTable(&infrastructure.TodoEntity{})
 		require.NoError(t, err)
 
-		err = repo.Delete(ctx, domain.NewTodoID())
+		id, err := domain.NewTodoID()
+		require.NoError(t, err)
+
+		err = repo.Delete(ctx, id)
 		assert.Error(t, err)
 
 		// 次のテストのために（もしあれば）テーブルを再作成

@@ -20,14 +20,22 @@ func New(tm repository.TransactionManager) *UseCase {
 
 func (u *UseCase) Execute(ctx context.Context, request Command) error {
 	return u.txManager.Do(ctx, func(tx repository.Transaction) error {
-		return tx.TodoRepo().Save(ctx, createTodo(request))
+		todo, err := createTodo(request)
+		if err != nil {
+			return err
+		}
+		return tx.TodoRepo().Save(ctx, todo)
 	})
 }
 
-func createTodo(request Command) *domain.Todo {
+func createTodo(request Command) (*domain.Todo, error) {
+	id, err := domain.NewTodoID()
+	if err != nil {
+		return nil, err
+	}
 	return &domain.Todo{
-		ID:          domain.NewTodoID(),
+		ID:          id,
 		Title:       request.Title,
 		Description: request.Description,
-	}
+	}, nil
 }

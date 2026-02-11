@@ -1,4 +1,4 @@
-import client from "@/api/client.ts";
+import { privateClient } from "@/api/client";
 import type {
   CreateTodoRequest,
   TodoList,
@@ -7,9 +7,10 @@ import type {
 import type { UUID } from "@/types.ts";
 
 export const getTodos = async () =>
-  client.get<TodoList>("/todos").then((res) => res.data);
+  privateClient.get<TodoList>("/todos").then((res) => res.data);
 export const createTodo = async (request: CreateTodoRequest) =>
-  client.post("/todos", request);
-export const deleteTodo = async (id: UUID) => client.delete(`/todos/${id}`);
+  privateClient.post("/todos", request);
+export const deleteTodo = async (id: UUID) =>
+  privateClient.delete(`/todos/${id}`);
 export const updateTodo = async (param: UpdateParam) =>
-  client.put(`/todos/${param.id}`, param.request);
+  privateClient.put(`/todos/${param.id}`, param.request);

@@ -4,6 +4,7 @@ import (
 	"context"
 	authHandler "echo-sample2/internal/auth/handler"
 	"echo-sample2/internal/httpclient"
+	myMiddleware "echo-sample2/internal/middleware"
 	"echo-sample2/internal/todo/application/usecase/create"
 	"echo-sample2/internal/todo/application/usecase/delete"
 	"echo-sample2/internal/todo/application/usecase/get"
@@ -20,6 +21,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/MicahParks/keyfunc/v3"
 	"github.com/go-playground/validator"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -62,6 +64,16 @@ func main() {
 	}))
 	e.Validator = &customValidator.CustomValidator{Validator: validator.New()}
 
+	jwksCtx, jwksCancel := context.WithCancel(context.Background())
+	defer jwksCancel()
+
+	jwksURL := os.Getenv("JWKS_URL")
+
+	k, err := keyfunc.NewDefaultCtx(jwksCtx, []string{jwksURL})
+	if err != nil {
+		logger.Fatal().Err(err).Msg("failed to initialize keyfunc")
+	}
+
 	authClient := httpclient.NewAuthHttpClient(os.Getenv("API_AUTH_WELL_KNOWN_CONFIG_URL"))
 	ah := authHandler.NewAuthHandler(authClient)
 	ah.RegisterAuthRoutes(e)
@@ -78,7 +90,7 @@ func main() {
 	updateTodoUseCase := update.New(txManager)
 	deleteUseCase := delete.New(txManager)
 	todoHandler := handler.NewTodoHandler(createTodoUseCase, getTodosUseCase, getTodoUseCase, updateTodoUseCase, deleteUseCase)
-	todoHandler.RegisterTodoRoutes(e)
+	todoHandler.RegisterTodoRoutes(e, myMiddleware.AuthMiddleware(myMiddleware.NewAuthMiddlewareConfig(k, os.Getenv("AUDIENCE"), os.Getenv("ISSUER"))))
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()

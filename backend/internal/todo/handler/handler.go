@@ -82,8 +82,8 @@ func NewTodoHandler(createTodoUseCase CreateUseCase, listUseCase ListUseCase, ge
 	}
 }
 
-func (h *TodoHandler) RegisterTodoRoutes(e *echo.Echo) {
-	g := e.Group("/todos")
+func (h *TodoHandler) RegisterTodoRoutes(e *echo.Echo, m echo.MiddlewareFunc) {
+	g := e.Group("/todos", m)
 	g.POST("", h.createTodo)
 	g.GET("", h.getTodos)
 	g.GET("/:id", h.getTodo)

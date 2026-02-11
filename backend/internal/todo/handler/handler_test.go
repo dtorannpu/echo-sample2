@@ -73,6 +73,12 @@ func (m *MockDeleteTodoUseCase) Execute(ctx context.Context, command delete.Comm
 	return args.Error(0)
 }
 
+func MockAuthMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		return next(c)
+	}
+}
+
 func TestTodoHandler(t *testing.T) {
 	setup := func() (*echo.Echo, *TodoHandler, *MockCreateTodoUseCase, *MockGetTodosUseCase, *MockGetTodoUseCase, *MockUpdateTodoUseCase, *MockDeleteTodoUseCase) {
 		e := echo.New()
@@ -83,7 +89,7 @@ func TestTodoHandler(t *testing.T) {
 		mockUpdateUseCase := new(MockUpdateTodoUseCase)
 		mockDeleteUseCase := new(MockDeleteTodoUseCase)
 		h := NewTodoHandler(mockCreateUseCase, mockGetTodosUseCase, mockGetTodoUseCase, mockUpdateUseCase, mockDeleteUseCase)
-		h.RegisterTodoRoutes(e)
+		h.RegisterTodoRoutes(e, MockAuthMiddleware)
 		return e, h, mockCreateUseCase, mockGetTodosUseCase, mockGetTodoUseCase, mockUpdateUseCase, mockDeleteUseCase
 	}
 
